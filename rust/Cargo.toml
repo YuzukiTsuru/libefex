@@ -1,0 +1,22 @@
+[package]
+name = "libfex"
+version = "0.1.0"
+edition = "2021"
+authors = ["libfex developers"]
+description = "Rust bindings for libfex - Allwinner FEL mode interaction library"
+license = "GPL-2.0"
+
+[lib]
+name = "libfex"
+
+[dependencies]
+libc = "0.2"
+thiserror = "1.0"
+
+[build-dependencies]
+bindgen = "0.65.1"
+cc = "1.0"
+
+[features]
+default = []
+static = []
