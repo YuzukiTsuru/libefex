@@ -3,6 +3,10 @@ project(libefex C)
 
 set(CMAKE_C_STANDARD 11)
 
+if(WIN32)
+    option(USE_WINUSB "Use winusb for USB communication on Windows" OFF)
+endif()
+
 include_directories(
         includes
         lib/libusb/include

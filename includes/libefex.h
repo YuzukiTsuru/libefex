@@ -2,7 +2,12 @@
 #define EFEX_LIBEFE_H
 
 #include <stdint.h>
+
+#if defined(_WIN32) && defined(USE_WINUSB)
+#include <windows.h>
+#else
 #include <libusb.h>
+#endif
 
 struct sunxi_fel_device_resp_t {
     char magic[8];
@@ -16,7 +21,8 @@ struct sunxi_fel_device_resp_t {
 };
 
 struct sunxi_fel_ctx_t {
-    libusb_device_handle *hdl;
+    void *hdl;
+    char *dev_name;
     int epout;
     int epin;
     struct sunxi_fel_device_resp_t resp;

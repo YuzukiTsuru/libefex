@@ -26,15 +26,15 @@ enum sunxi_fel_usb_request_t {
  * This function sends data to a specified bulk endpoint of a USB device. It uses the provided
  * device handle, endpoint number, and data buffer to send the data.
  *
- * @param hdl A pointer to the libusb device handle representing the open USB device.
+ * @param handle A pointer to the usb device handle representing the open USB device.
  * @param ep The endpoint address to send the data to. Should be a valid bulk endpoint.
  * @param buf A pointer to the buffer containing the data to be sent.
  * @param len The length of the data to be sent, in bytes.
  * @return 0 on success, or a negative error code on failure.
  *
- * @note The function uses libusb_bulk_transfer to perform the bulk transfer.
+ * @note The function uses usb to perform the bulk transfer.
  */
-int sunxi_usb_bulk_send(libusb_device_handle *hdl, int ep, const char *buf, size_t len);
+int sunxi_usb_bulk_send(void *handle, int ep, const char *buf, ssize_t len);
 
 /**
  * @brief Receives data from a bulk USB endpoint.
@@ -42,15 +42,15 @@ int sunxi_usb_bulk_send(libusb_device_handle *hdl, int ep, const char *buf, size
  * This function receives data from a specified bulk endpoint of a USB device. It uses the provided
  * device handle, endpoint number, and buffer to receive the data.
  *
- * @param hdl A pointer to the libusb device handle representing the open USB device.
+ * @param handle A pointer to the usb device handle representing the open USB device.
  * @param ep The endpoint address to receive data from. Should be a valid bulk endpoint.
  * @param buf A pointer to the buffer where received data will be stored.
  * @param len The maximum number of bytes to receive.
  * @return The number of bytes actually received on success, or a negative error code on failure.
  *
- * @note The function uses libusb_bulk_transfer to perform the bulk transfer.
+ * @note The function uses usb to perform the bulk transfer.
  */
-int sunxi_usb_bulk_recv(libusb_device_handle *hdl, int ep, char *buf, size_t len);
+int sunxi_usb_bulk_recv(void *handle, int ep, char *buf, ssize_t len);
 
 /**
  * @brief Sends a USB request to the device.
@@ -139,5 +139,19 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx);
  * @note This function requires libusb to be properly installed and initialized before use.
  */
 int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx);
+
+/**
+ * @brief Cleans up and releases USB context resources.
+ *
+ * This function releases any resources allocated during USB initialization, closes any open
+ * device handles, and cleans up the context structure. It should be called when USB operations
+ * are no longer needed to prevent resource leaks.
+ *
+ * @param ctx A pointer to the sunxi_fel_ctx_t structure to be cleaned up.
+ * @return 0 on success, or a negative error code on failure.
+ *
+ * @note Always call this function after you are done using the USB device to properly release resources.
+ */
+int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx);
 
 #endif //EFEX_USB_LAYER_H

@@ -12,7 +12,7 @@
 extern struct payloads_ops riscv32_e907_ops;
 
 static struct payloads_ops *payloads[] = {
-    &riscv32_e907_ops,
+        &riscv32_e907_ops,
 };
 
 static struct payloads_ops *current_payload;
