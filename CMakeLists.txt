@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(libfex C)
+project(libefex C)
 
 set(CMAKE_C_STANDARD 11)
 

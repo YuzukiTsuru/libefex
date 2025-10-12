@@ -1,4 +1,4 @@
-#include "../includes/libFEx.h"
+#include "../includes/libefex.h"
 #include "../includes/fel-payloads.h"
 #include "../includes/fel-protocol.h"
 #include "../includes/usb_layer.h"
@@ -44,7 +44,7 @@ static PyObject *py_sunxi_get_device_resp(PyObject *self, PyObject *args);
 // Context type object
 static PyTypeObject PyFelContextType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "libfex.Context",
+    .tp_name = "libefex.Context",
     .tp_doc = "FEL context object",
     .tp_basicsize = sizeof(PyFelContext),
     .tp_itemsize = 0,
@@ -55,7 +55,7 @@ static PyTypeObject PyFelContextType = {
 };
 
 // Module function list
-static PyMethodDef LibFExMethods[] = {
+static PyMethodDef LibEfexMethods[] = {
     {"scan_usb_device", py_sunxi_scan_usb_device, METH_O, "Scan for USB devices in FEL mode"},
     {"usb_init", py_sunxi_usb_init, METH_O, "Initialize USB connection"},
     {"fel_init", py_sunxi_fel_init, METH_O, "Initialize FEL context"},
@@ -72,12 +72,12 @@ static PyMethodDef LibFExMethods[] = {
 };
 
 // Module definition
-static struct PyModuleDef libfexmodule = {
+static struct PyModuleDef libefexmodule = {
     PyModuleDef_HEAD_INIT,
-    "libfex",
-    "Python bindings for libfex - Allwinner FEL mode interaction library",
+    "libefex",
+    "Python bindings for libefex - Allwinner FEL mode interaction library",
     -1,
-    LibFExMethods,
+    LibEfexMethods,
     NULL,
     NULL,
     NULL,
@@ -295,7 +295,7 @@ static PyObject *py_sunxi_get_device_resp(PyObject *self, PyObject *args) {
 }
 
 // Module initialization function
-PyMODINIT_FUNC PyInit_libfex(void) {
+PyMODINIT_FUNC PyInit_libefex(void) {
     PyObject *m;
     
     // Initialize type
@@ -304,7 +304,7 @@ PyMODINIT_FUNC PyInit_libfex(void) {
     }
     
     // Create module
-    m = PyModule_Create(&libfexmodule);
+    m = PyModule_Create(&libefexmodule);
     if (m == NULL) {
         return NULL;
     }

@@ -1,6 +1,6 @@
-# Building libfex Python Bindings
+# Building libefex Python Bindings
 
-This document provides detailed instructions for building the Python bindings for libfex.
+This document provides detailed instructions for building the Python bindings for libefex.
 
 ## Prerequisites
 
@@ -14,8 +14,8 @@ Before building the Python bindings, ensure you have the following dependencies 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/libfex.git
-   cd libfex/python
+   git clone https://github.com/yourusername/libefex.git
+    cd libefex/python
    ```
 
 2. Install the Python package:
@@ -32,8 +32,8 @@ Before building the Python bindings, ensure you have the following dependencies 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/libfex.git
-   cd libfex/python
+   git clone https://github.com/YuzukiTsuru/libefex.git
+   cd libefex/python
    ```
 
 2. Install system dependencies (example for Ubuntu/Debian):

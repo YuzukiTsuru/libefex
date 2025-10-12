@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-libfex Python Bindings Test Script
+libefex Python Bindings Test Script
 
-This script is used to test the basic functionality of the libfex Python bindings.
+This script is used to test the basic functionality of the libefex Python bindings.
 """
 
 import sys
-import libfex
-from libfex import Arch
+import libefex
+from libefex import Arch
 
 
 def print_separator(title):
@@ -21,10 +21,10 @@ def test_device_scan():
     """Test device scanning functionality"""
     print_separator("Device Scanning Test")
     
-    ctx = libfex.Context()
+    ctx = libefex.Context()
     print("Context object created successfully")
     
-    scan_result = libfex.scan_usb_device(ctx)
+    scan_result = libefex.scan_usb_device(ctx)
     print(f"Scan result: {scan_result}")
     
     if scan_result > 0:
@@ -39,7 +39,7 @@ def test_usb_initialization(ctx):
     """Test USB initialization functionality"""
     print_separator("USB Initialization Test")
     
-    usb_init_result = libfex.usb_init(ctx)
+    usb_init_result = libefex.usb_init(ctx)
     print(f"USB initialization result: {usb_init_result}")
     
     if usb_init_result > 0:
@@ -53,7 +53,7 @@ def test_fel_initialization(ctx):
     """Test FEL initialization functionality"""
     print_separator("FEL Initialization Test")
     
-    fel_init_result = libfex.fel_init(ctx)
+    fel_init_result = libefex.fel_init(ctx)
     print(f"FEL initialization result: {fel_init_result}")
     
     if fel_init_result >= 0:
@@ -61,7 +61,7 @@ def test_fel_initialization(ctx):
         
         # Get and print device response data
         try:
-            resp_data = libfex.get_device_resp(ctx)
+            resp_data = libefex.get_device_resp(ctx)
             print("\nDevice response data:")
             print(f"magic: {resp_data['magic']}")
             print(f"id: 0x{resp_data['id']:08X}")
@@ -84,7 +84,7 @@ def test_payloads_initialization():
     print_separator("Payload Initialization Test")
     
     try:
-        libfex.payloads_init(Arch['RISCV32_E907'])
+        libefex.payloads_init(Arch['RISCV32_E907'])
         print("RISCV32_E907 architecture payload initialization successful!")
         return True
     except Exception as e:
@@ -96,15 +96,15 @@ def test_payloads_read_write(ctx):
     print_separator("Payload Read/Write Test")
     
     try:
-        payload = libfex.payloads_readl(ctx, 0x02001000)
+        payload = libefex.payloads_readl(ctx, 0x02001000)
         print(f"Read mem at 0x02001000: 0x{payload:08X}")
         
         # Write payload
-        libfex.payloads_writel(ctx, 0x80001400, 0x02001000)
+        libefex.payloads_writel(ctx, 0x80001400, 0x02001000)
         print("Write mem at 0x02001000: 0x80001400")
         
         # Read back payload
-        payload = libfex.payloads_readl(ctx, 0x02001000)
+        payload = libefex.payloads_readl(ctx, 0x02001000)
         print(f"Read back mem at 0x02001000: 0x{payload:08X}")
         
         return True
@@ -129,7 +129,7 @@ def test_architecture_constants():
 
 def run_tests():
     """Run all tests"""
-    print("libfex Python Bindings Test Script")
+    print("libefex Python Bindings Test Script")
     print(f"Python version: {sys.version}")
     
     # Test architecture constants

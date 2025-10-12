@@ -1,5 +1,5 @@
-#ifndef FEX_LIBFEX_H
-#define FEX_LIBFEX_H
+#ifndef EFEX_LIBEFE_H
+#define EFEX_LIBEFE_H
 
 #include <stdint.h>
 #include <libusb.h>
@@ -22,4 +22,4 @@ struct sunxi_fel_ctx_t {
     struct sunxi_fel_device_resp_t resp;
 };
 
-#endif //FEX_LIBFEX_H
+#endif //EFEX_LIBEFE_H

@@ -1,6 +1,6 @@
-# libfex
+# libefex
 
-libfex is a cross-platform library for interacting with Allwinner chips in FEL mode. FEL is a low-level subroutine contained in the BootROM on Allwinner devices. It is used for initial programming and recovery of devices using USB.
+libefex is a cross-platform library for interacting with Allwinner chips in FEL mode. FEL is a low-level subroutine contained in the BootROM on Allwinner devices. It is used for initial programming and recovery of devices using USB.
 
 ## Features
 
@@ -24,8 +24,8 @@ libfex is a cross-platform library for interacting with Allwinner chips in FEL m
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/libfex.git
-cd libfex
+git clone https://github.com/yourusername/libefex.git
+cd libefex
 
 # Create build directory
 mkdir build
@@ -46,7 +46,7 @@ cmake --build .
 
 ```c
 #include <stdio.h>
-#include "libFEx.h"
+#include "libefex.h"
 #include "usb_layer.h"
 #include "fel-protocol.h"
 
@@ -98,7 +98,7 @@ uint32_t read_value = sunxi_fel_readl(&ctx, address);
 printf("Read value: 0x%08x\n", read_value);
 
 // Write memory block
-char buffer[1024] = "Hello, libfex!";
+char buffer[1024] = "Hello, libefex!";
 sunxi_fel_write_memory(&ctx, address, buffer, sizeof(buffer));
 
 // Read memory block
@@ -108,7 +108,7 @@ sunxi_fel_read_memory(&ctx, address, read_buffer, sizeof(read_buffer));
 
 ### Python Bindings
 
-libfex provides complete Python bindings for all the core functionality of the library, making it easy to interact with Allwinner devices in FEL mode using Python.
+libefex provides complete Python bindings for all the core functionality of the library, making it easy to interact with Allwinner devices in FEL mode using Python.
 
 #### Installation
 
@@ -132,23 +132,23 @@ For detailed build instructions and troubleshooting, please refer to the [BUILDI
 #### Basic Usage Example
 
 ```python
-import libfex
+import libefex
 
 # Create a FEL context object
-ctx = libfex.Context()
+ctx = libefex.Context()
 
 # Scan for FEL devices
-if libfex.scan_usb_device(ctx) <= 0:
+if libefex.scan_usb_device(ctx) <= 0:
     print("No FEL device found")
     exit(1)
 
 # Initialize USB connection
-if libfex.usb_init(ctx) <= 0:
+if libefex.usb_init(ctx) <= 0:
     print("USB initialization failed")
     exit(1)
 
 # Initialize FEL mode
-if libfex.fel_init(ctx) < 0:
+if libefex.fel_init(ctx) < 0:
     print("FEL initialization failed")
     exit(1)
 
@@ -156,28 +156,28 @@ print("Successfully connected to FEL device")
 
 # Initialize payload for specific architecture
 # Available architectures: Arch.ARM32, Arch.AARCH64, Arch.RISCV32_E907
-libfex.payloads_init(libfex.Arch.ARM32)
+libefex.payloads_init(libefex.Arch.ARM32)
 
 # Memory operations example
 address = 0x10000000
 
 # Write a 32-bit value
-libfex.writel(ctx, 0x12345678, address)
+libefex.writel(ctx, 0x12345678, address)
 
 # Read back the value
-value = libfex.readl(ctx, address)
+value = libefex.readl(ctx, address)
 print(f"Read value: 0x{value:x}")
 
 # Write a block of memory
-buffer = b"Hello from libfex Python bindings!"
-libfex.write_memory(ctx, address + 0x100, buffer)
+buffer = b"Hello from libefex Python bindings!"
+libefex.write_memory(ctx, address + 0x100, buffer)
 
 # Read back the block
-read_buffer = libfex.read_memory(ctx, address + 0x100, len(buffer))
+read_buffer = libefex.read_memory(ctx, address + 0x100, len(buffer))
 print(f"Read buffer: {read_buffer.decode('utf-8', errors='ignore')}")
 
 # Execute code at a specific address (use with caution)
-# libfex.exec(ctx, code_address)
+# libefex.exec(ctx, code_address)
 ```
 
 #### Python API Reference

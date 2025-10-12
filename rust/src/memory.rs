@@ -1,10 +1,10 @@
 //! Memory operation related functionality
 
-use super::{Context, FexError, Arch};
+use super::{Context, EfexError, Arch};
 use std::ptr;
 
 /// Read a 32-bit value from the specified memory address
-pub fn readl(ctx: &Context, address: u32) -> Result<u32, FexError> {
+pub fn readl(ctx: &Context, address: u32) -> Result<u32, EfexError> {
     unsafe {
         let value = super::sunxi_fel_readl(ctx.as_ptr(), address);
         Ok(value)
@@ -12,7 +12,7 @@ pub fn readl(ctx: &Context, address: u32) -> Result<u32, FexError> {
 }
 
 /// Write a 32-bit value to the specified memory address
-pub fn writel(ctx: &Context, value: u32, address: u32) -> Result<(), FexError> {
+pub fn writel(ctx: &Context, value: u32, address: u32) -> Result<(), EfexError> {
     unsafe {
         super::sunxi_fel_writel(ctx.as_ptr(), value, address);
         Ok(())
@@ -20,7 +20,7 @@ pub fn writel(ctx: &Context, value: u32, address: u32) -> Result<(), FexError> {
 }
 
 /// Read a block of memory data from the specified address
-pub fn read_memory(ctx: &Context, address: u32, length: usize) -> Result<Vec<u8>, FexError> {
+pub fn read_memory(ctx: &Context, address: u32, length: usize) -> Result<Vec<u8>, EfexError> {
     let mut buffer = vec![0u8; length];
     unsafe {
         super::sunxi_fel_read_memory(
@@ -34,7 +34,7 @@ pub fn read_memory(ctx: &Context, address: u32, length: usize) -> Result<Vec<u8>
 }
 
 /// Write a block of memory data to the specified address
-pub fn write_memory(ctx: &Context, address: u32, data: &[u8]) -> Result<(), FexError> {
+pub fn write_memory(ctx: &Context, address: u32, data: &[u8]) -> Result<(), EfexError> {
     unsafe {
         super::sunxi_fel_write_memory(
             ctx.as_ptr(), 
@@ -47,7 +47,7 @@ pub fn write_memory(ctx: &Context, address: u32, data: &[u8]) -> Result<(), FexE
 }
 
 /// Execute code at the specified memory address
-pub fn exec(ctx: &Context, address: u32) -> Result<(), FexError> {
+pub fn exec(ctx: &Context, address: u32) -> Result<(), EfexError> {
     unsafe {
         super::sunxi_fel_exec(ctx.as_ptr(), address);
         Ok(())
@@ -55,7 +55,7 @@ pub fn exec(ctx: &Context, address: u32) -> Result<(), FexError> {
 }
 
 /// Initialize payload for a specific architecture
-pub fn payloads_init(arch: Arch) -> Result<(), FexError> {
+pub fn payloads_init(arch: Arch) -> Result<(), EfexError> {
     unsafe {
         super::sunxi_fel_payloads_init(arch.to_raw() as u32);
         Ok(())
@@ -63,7 +63,7 @@ pub fn payloads_init(arch: Arch) -> Result<(), FexError> {
 }
 
 /// Read a 32-bit value from the specified memory address using the current payload
-pub fn payloads_readl(ctx: &Context, address: u32) -> Result<u32, FexError> {
+pub fn payloads_readl(ctx: &Context, address: u32) -> Result<u32, EfexError> {
     unsafe {
         let value = super::sunxi_fel_payloads_readl(ctx.as_ptr(), address);
         Ok(value)
@@ -71,7 +71,7 @@ pub fn payloads_readl(ctx: &Context, address: u32) -> Result<u32, FexError> {
 }
 
 /// Write a 32-bit value to the specified memory address using the current payload
-pub fn payloads_writel(ctx: &Context, value: u32, address: u32) -> Result<(), FexError> {
+pub fn payloads_writel(ctx: &Context, value: u32, address: u32) -> Result<(), EfexError> {
     unsafe {
         super::sunxi_fel_payloads_writel(ctx.as_ptr(), value, address);
         Ok(())

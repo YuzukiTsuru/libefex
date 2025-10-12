@@ -1,6 +1,6 @@
-//! Rust bindings for libfex
-//! 
-//! libfex is a cross-platform library for interacting with Allwinner chips in FEL mode.
+//! Rust bindings for libefex
+
+//! libefex is a cross-platform library for interacting with Allwinner chips in FEL mode.
 
 mod context;
 mod error;
@@ -8,7 +8,7 @@ mod arch;
 mod memory;
 
 pub use context::Context;
-pub use error::FexError;
+pub use error::EfexError;
 pub use arch::Arch;
 pub use memory::{readl, writel, read_memory, write_memory, exec};
 

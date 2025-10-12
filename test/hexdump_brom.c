@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "libFEx.h"
+#include "libefex.h"
 #include "usb_layer.h"
 #include "fel-protocol.h"
 

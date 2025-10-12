@@ -1,13 +1,13 @@
 [package]
-name = "libfex"
+name = "libefex"
 version = "0.1.0"
 edition = "2021"
-authors = ["libfex developers"]
-description = "Rust bindings for libfex - Allwinner FEL mode interaction library"
+authors = ["libefex developers"]
+description = "Rust bindings for libefex - Allwinner FEL mode interaction library"
 license = "GPL-2.0"
 
 [lib]
-name = "libfex"
+name = "libefex"
 
 [dependencies]
 libc = "0.2"

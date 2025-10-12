@@ -46,11 +46,11 @@ fn main() {
     }
     
     // Build C code
-    build.compile("fex");
+    build.compile("efex");
     
     // Generate Rust bindings
     let bindings = bindgen::Builder::default()
-        .header(include_dir.join("libFEx.h").to_str().unwrap())
+        .header(include_dir.join("libefex.h").to_str().unwrap())
         .header(include_dir.join("fel-protocol.h").to_str().unwrap())
         .header(include_dir.join("usb_layer.h").to_str().unwrap())
         .header(include_dir.join("fel-payloads.h").to_str().unwrap())

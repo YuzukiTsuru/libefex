@@ -1,4 +1,4 @@
-# libfex Rust Bindings
+# libefex Rust Bindings
 
 Rust language binding library for interacting with Allwinner chips in FEL mode.
 
@@ -40,7 +40,7 @@ cargo build --release
 Here is a basic usage example:
 
 ```rust
-use libfex::{Context, Arch, readl, writel};
+use libefex::{Context, Arch, readl, writel};
 
 fn main() {
     // 创建Context对象
@@ -57,7 +57,7 @@ fn main() {
         ctx.fel_init().expect("FEL initialization failed");
         
         // 初始化特定架构的负载
-        libfex::payloads_init(Arch::ARM32).expect("Payload initialization failed");
+        libefex::payloads_init(Arch::ARM32).expect("Payload initialization failed");
         
         // 内存操作示例
         let address = 0x10000000;
@@ -104,7 +104,7 @@ For more examples, please check the `examples` directory.
 
 ## Error Handling
 
-The library uses `Result<T, FexError>` type for error handling. The `FexError` enum includes the following error types:
+The library uses `Result<T, EfexError>` type for error handling. The `EfexError` enum includes the following error types:
 
 - `UsbError`: USB device related errors
 - `DeviceNotFound`: Device not found

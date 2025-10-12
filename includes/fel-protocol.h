@@ -1,8 +1,8 @@
-#ifndef LIBFEL_LIBFEL_H
-#define LIBFEL_LIBFEL_H
+#ifndef EFEX_FEL_PROTOCOL_H
+#define EFEX_FEL_PROTOCOL_H
 
 #include <stdint.h>
-#include "libFEx.h"
+#include "libefex.h"
 #include "compiler.h"
 
 enum sunxi_fel_cmd_t {
@@ -24,7 +24,7 @@ enum sunxi_verify_device_mode_t {
     AW_DEVICE_MODE_UPDATE_HOT = 0x4,
 };
 
-FEX_PACKED_BEGIN
+EFEX_PACKED_BEGIN
 struct sunxi_usb_request_t {
     char magic[4];
     uint32_t tab;
@@ -33,10 +33,10 @@ struct sunxi_usb_request_t {
     uint8_t resvered2;
     uint8_t cmd_length;
     uint8_t cmd_package[16];
-} FEX_PACKED;
-FEX_PACKED_END
+} EFEX_PACKED;
+EFEX_PACKED_END
 
-FEX_PACKED_BEGIN
+EFEX_PACKED_BEGIN
 struct sunxi_usb_response_t {
     union {
         char magic[4];
@@ -45,27 +45,27 @@ struct sunxi_usb_response_t {
     uint32_t tag;
     uint32_t residue;
     uint8_t status;
-} FEX_PACKED;
-FEX_PACKED_END
+} EFEX_PACKED;
+EFEX_PACKED_END
 
-FEX_PACKED_BEGIN
+EFEX_PACKED_BEGIN
 struct sunxi_fel_request_t {
     uint16_t cmd;
     uint16_t tag;
     uint32_t address;
     uint32_t len;
     uint32_t flags;
-} FEX_PACKED;
-FEX_PACKED_END
+} EFEX_PACKED;
+EFEX_PACKED_END
 
-FEX_PACKED_BEGIN
+EFEX_PACKED_BEGIN
 struct sunxi_fel_response_t {
     uint16_t magic;
     uint16_t tag;
     uint8_t status;
     uint8_t reserve[3];
-} FEX_PACKED;
-FEX_PACKED_END
+} EFEX_PACKED;
+EFEX_PACKED_END
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
@@ -153,4 +153,4 @@ void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, con
  */
 void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, size_t len);
 
-#endif //LIBFEL_LIBFEL_H
+#endif //EFEX_FEL_PROTOCOL_H

@@ -1,6 +1,6 @@
 //! Context struct and related operations
 
-use super::{FexError, Arch};
+use super::{EfexError, Arch};
 use std::ptr;
 use std::ffi::CString;
 use std::ops::Drop;
@@ -12,14 +12,14 @@ pub struct Context {
 
 impl Context {
     /// Create a new Context instance
-    pub fn new() -> Result<Self, FexError> {
+    pub fn new() -> Result<Self, EfexError> {
         unsafe {
             // Allocate memory
             let ctx_ptr = libc::calloc(1, std::mem::size_of::<super::sunxi_fel_ctx_t>())
                 as *mut super::sunxi_fel_ctx_t;
             
             if ctx_ptr.is_null() {
-                return Err(FexError::Unknown("Failed to allocate memory for context".to_string()));
+                return Err(EfexError::Unknown("Failed to allocate memory for context".to_string()));
             }
             
             Ok(Context { ptr: ctx_ptr })
@@ -32,43 +32,43 @@ impl Context {
     }
     
     /// Scan for USB devices
-    pub fn scan_usb_device(&mut self) -> Result<bool, FexError> {
+    pub fn scan_usb_device(&mut self) -> Result<bool, EfexError> {
         unsafe {
             let result = super::sunxi_scan_usb_device(self.ptr);
             if result > 0 {
                 Ok(true)
             } else {
-                Err(FexError::DeviceNotFound)
+                Err(EfexError::DeviceNotFound)
             }
         }
     }
     
     /// Initialize USB connection
-    pub fn usb_init(&mut self) -> Result<(), FexError> {
+    pub fn usb_init(&mut self) -> Result<(), EfexError> {
         unsafe {
             let result = super::sunxi_usb_init(self.ptr);
             if result > 0 {
                 Ok(())
             } else {
-                Err(FexError::UsbError("USB initialization failed".to_string()))
+                Err(EfexError::UsbError("USB initialization failed".to_string()))
             }
         }
     }
     
     /// Initialize FEL mode
-    pub fn fel_init(&mut self) -> Result<(), FexError> {
+    pub fn fel_init(&mut self) -> Result<(), EfexError> {
         unsafe {
             let result = super::sunxi_fel_init(self.ptr);
             if result >= 0 {
                 Ok(())
             } else {
-                Err(FexError::FelInitializationFailed)
+                Err(EfexError::FelInitializationFailed)
             }
         }
     }
     
     /// Get device response data
-    pub fn get_device_resp(&self) -> Result<DeviceResponse, FexError> {
+    pub fn get_device_resp(&self) -> Result<DeviceResponse, EfexError> {
         unsafe {
             let resp = (*self.ptr).resp;
             

@@ -1,9 +1,9 @@
-//! Basic usage example for libfex Rust bindings
+//! Basic usage example for libefex Rust bindings
 
-use libfex::{Context, Arch, readl, writel, read_memory, write_memory, payloads_init};
+use libefex::{Context, Arch, readl, writel, read_memory, write_memory, payloads_init};
 
 fn main() {
-    println!("libfex Rust Bindings - Basic Usage Example");
+    println!("libefex Rust Bindings - Basic Usage Example");
     
     // Create Context object
     let mut ctx = match Context::new() {

@@ -1,8 +1,9 @@
-#ifndef FEX_FEL_PAYLOADS_H
-#define FEX_FEL_PAYLOADS_H
+#ifndef EFEX_FEL_PAYLOADS_H
+#define EFEX_FEL_PAYLOADS_H
 
 #include <stdint.h>
-#include "libFEx.h"
+#include "libefex.h"
+#include "compiler.h"
 
 enum sunxi_fel_payloads_arch {
     PAYLOAD_ARCH_ARM32,
@@ -121,4 +122,4 @@ uint32_t sunxi_fel_payloads_readl(const struct sunxi_fel_ctx_t *ctx, uint32_t ad
  */
 void sunxi_fel_payloads_writel(const struct sunxi_fel_ctx_t *ctx, uint32_t value, uint32_t addr);
 
-#endif //FEX_FEL_PAYLOADS_H
+#endif //EFEX_FEL_PAYLOADS_H

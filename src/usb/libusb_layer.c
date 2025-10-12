@@ -7,6 +7,7 @@
 #include "ending.h"
 #include "usb_layer.h"
 #include "fel-protocol.h"
+#include "compiler.h"
 
 int sunxi_usb_bulk_send(libusb_device_handle *hdl, const int ep, const char *buf, size_t len) {
     const size_t max_chunk = 128 * 1024;

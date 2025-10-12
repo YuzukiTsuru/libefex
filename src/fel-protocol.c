@@ -7,6 +7,7 @@
 #include "ending.h"
 #include "usb_layer.h"
 #include "fel-protocol.h"
+#include "compiler.h"
 
 static int sunxi_send_fel_request(const struct sunxi_fel_ctx_t *ctx, const enum sunxi_fel_cmd_t type,
                                   const uint32_t addr, const uint32_t length) {

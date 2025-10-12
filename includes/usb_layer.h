@@ -1,7 +1,7 @@
-#ifndef FEX_USB_LAYER_H
-#define FEX_USB_LAYER_H
+#ifndef EFEX_USB_LAYER_H
+#define EFEX_USB_LAYER_H
 
-#include "libFEx.h"
+#include "libefex.h"
 
 #define DEFAULT_USB_TIMEOUT (10000)
 
@@ -140,4 +140,4 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx);
  */
 int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx);
 
-#endif //FEX_USB_LAYER_H
+#endif //EFEX_USB_LAYER_H

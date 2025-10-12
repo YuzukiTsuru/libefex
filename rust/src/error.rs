@@ -2,9 +2,9 @@ use thiserror::Error;
 use std::io;
 use std::ffi::NulError;
 
-/// Error types that can occur during libfex operations
+/// Error types that can occur during libefex operations
 #[derive(Error, Debug)]
-pub enum FexError {
+pub enum EfexError {
     /// USB device related errors
     #[error("USB device error: {0}")]
     UsbError(String),

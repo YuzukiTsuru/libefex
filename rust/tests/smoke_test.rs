@@ -1,6 +1,6 @@
 //! Basic smoke test
 
-use libfex::Context;
+use libefex::Context;
 
 #[test]
 fn test_context_creation() {

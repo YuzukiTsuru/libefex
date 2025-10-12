@@ -1,5 +1,5 @@
-#ifndef FEL_ENDING_H
-#define FEL_ENDING_H
+#ifndef EFEX_ENDING_H
+#define EFEX_ENDING_H
 
 #include <stdint.h>
 
@@ -72,4 +72,4 @@
 #define be16_to_cpu(x)	(SWAB16((uint16_t)(x)))
 #endif
 
-#endif //FEL_ENDING_H
+#endif //EFEX_ENDING_H

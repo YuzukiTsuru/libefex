@@ -72,9 +72,9 @@ def get_library_dirs():
 
 # Create extension module
 ext = Extension(
-    name='libfex',
+    name='libefex',
     sources=[
-        'libfex-binding.c',
+        'libefex-binding.c',
         os.path.abspath(os.path.join('..', 'src', 'fel-protocol.c')),
         os.path.abspath(os.path.join('..', 'src', 'usb_layer.c')),
         os.path.abspath(os.path.join('..', 'src', 'fel-payloads.c')),
@@ -84,19 +84,19 @@ ext = Extension(
     libraries=get_libraries(),
     library_dirs=get_library_dirs(),
     py_limited_api=True,
-    # Remove PY_SSIZE_T_CLEAN macro definition as it's already defined in libfex-binding.c
+    # Remove PY_SSIZE_T_CLEAN macro definition as it's already defined in libefex-binding.c
     define_macros=[]
 )
 
 
 # Project metadata
 setup_args = dict(
-    name='libfex',
+    name='libefex',
     version='0.1.0',
-    description='Python bindings for libfex - Allwinner FEL mode interaction library',
-    long_description='Python bindings for libfex, a cross-platform library for interacting with Allwinner chips in FEL mode.',
-    author='libfex developers',
-    url='https://github.com/yourusername/libfex',
+    description='Python bindings for libefex - Allwinner FEL mode interaction library',
+    long_description='Python bindings for libefex, a cross-platform library for interacting with Allwinner chips in FEL mode.',
+    author='libefex developers',
+    url='https://github.com/YuzukiTsuru/libefex',
     packages=[],  # No Python packages, just the C extension
     ext_modules=[ext],
     cmdclass={"bdist_wheel": bdist_wheel_abi3},
