@@ -26,7 +26,10 @@ enum sunxi_verify_device_mode_t {
 
 EFEX_PACKED_BEGIN
 struct sunxi_usb_request_t {
-    char magic[4];
+    union {
+        char magic[4];
+        uint32_t magics;
+    };
     uint32_t tab;
     uint32_t data_length;
     uint16_t resvered1;
@@ -66,6 +69,8 @@ struct sunxi_fel_response_t {
     uint8_t reserve[3];
 } EFEX_PACKED;
 EFEX_PACKED_END
+
+#define FEL_CODE_MAX_SIZE (32 * 1024)
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
@@ -139,7 +144,7 @@ void sunxi_fel_writel(const struct sunxi_fel_ctx_t *ctx, uint32_t val, uint32_t 
  * @param[out] buf Pointer to the buffer where the data will be stored.
  * @param[in] len The number of bytes to read from the memory.
  */
-void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, size_t len);
+void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
 
 /**
  * @brief Write a block of memory to the specified address.
@@ -151,6 +156,6 @@ void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, con
  * @param[in] buf Pointer to the buffer containing the data to be written.
  * @param[in] len The number of bytes to write to the memory.
  */
-void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, size_t len);
+void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
 
 #endif //EFEX_FEL_PROTOCOL_H

@@ -79,8 +79,10 @@ int main() {
     }
     printf("\n");
 
+    sunxi_fel_write_memory(&ctx, 0x120000, "Hello, FEL!", 12);
+
     // Read memory into buf
-    sunxi_fel_read_memory(&ctx, 0x0, buf, 0x100);
+    sunxi_fel_read_memory(&ctx, 0x120000, buf, 0x100);
 
     // Output the contents of buf in hex
     hexdump(0x0, buf, 0x100);

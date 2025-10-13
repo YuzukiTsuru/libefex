@@ -84,7 +84,7 @@ void sunxi_fel_writel(const struct sunxi_fel_ctx_t *ctx, const uint32_t val, con
     sunxi_fel_write_wrapper(ctx, addr, &val, sizeof(uint32_t));
 }
 
-void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, size_t len) {
+void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
     while (len > 0) {
         const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
         sunxi_fel_read_wrapper(ctx, addr, buf, n);
@@ -94,7 +94,7 @@ void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, con
     }
 }
 
-void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, size_t len) {
+void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
     while (len > 0) {
         const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
         sunxi_fel_write_wrapper(ctx, addr, buf, n);
