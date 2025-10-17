@@ -11,10 +11,24 @@
 #include <windows.h>
 #include <initguid.h>
 #include <SetupAPI.h>
+#include <usbiodef.h>
 
-#define IOCTL_AWUSB_SEND_DATA CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0807, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
-#define IOCTL_AWUSB_RECV_DATA CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0808, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
-DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
+static int match_vid_pid(const char *device_path) {
+    if (!device_path)
+        return 0;
+    char pattern[64];
+    snprintf(pattern, sizeof(pattern), "vid_%04x&pid_%04x", SUNXI_USB_VENDOR, SUNXI_USB_PRODUCT);
+    size_t n = strlen(device_path);
+    char *lower = (char *) malloc(n + 1);
+    if (!lower)
+        return 0;
+    for (size_t i = 0; i < n; ++i)
+        lower[i] = (char) tolower((unsigned char) device_path[i]);
+    lower[n] = '\0';
+    const int found = strstr(lower, pattern) != NULL;
+    free(lower);
+    return found;
+}
 
 int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
     HANDLE const usb_handle = (HANDLE) handle;
@@ -26,8 +40,10 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 
         sunxi_usb_hex_dump(buf, chunk, "SEND");
 
-        BOOL const result = DeviceIoControl(usb_handle, IOCTL_AWUSB_SEND_DATA, NULL,
-                                            (DWORD) 0, (LPVOID) buf, chunk, &bytes_sent, NULL);
+        const DWORD dwIoControlCode = CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0807, METHOD_OUT_DIRECT, FILE_ANY_ACCESS);
+
+        BOOL const result = DeviceIoControl(usb_handle, dwIoControlCode,NULL, (DWORD) 0,
+                                            (LPVOID) buf, chunk, &bytes_sent, NULL);
 
         if (!result) {
             fprintf(stderr, "USB bulk send failed with error code %lu\n", GetLastError());
@@ -49,7 +65,9 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
     HANDLE const usb_handle = (HANDLE) handle;
     DWORD bytes_received = 0;
 
-    const BOOL result = DeviceIoControl(usb_handle, IOCTL_AWUSB_RECV_DATA, NULL, 0,
+    const DWORD dwIoControlCode = CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0808, METHOD_IN_DIRECT, FILE_ANY_ACCESS);
+
+    const BOOL result = DeviceIoControl(usb_handle, dwIoControlCode, NULL, 0,
                                         (LPVOID) buf, (DWORD) len, &bytes_received, NULL);
 
     if (!result) {
@@ -62,7 +80,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
         return -1;
     }
 
-    sunxi_usb_hex_dump(buf, (size_t)bytes_received, "RECV");
+    sunxi_usb_hex_dump(buf, (size_t) bytes_received, "RECV");
 
     return 0;
 }
@@ -81,14 +99,6 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
         return -1;
     }
 
-    const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA)
-            GlobalAlloc(LMEM_ZEROINIT, 1024);
-    if (detail_data == NULL) {
-        SetupDiDestroyDeviceInfoList(device_info_set);
-        return -1;
-    }
-
-    detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
     BOOL result = TRUE;
 
     while (result) {
@@ -97,25 +107,42 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
                                              (ULONG) index, &interface_data);
 
         if (result) {
-            result = SetupDiGetInterfaceDeviceDetail(device_info_set, &interface_data,
-                                                     detail_data, 1024, NULL, NULL);
+            DWORD required_size = 0;
+            // First call to get required buffer size
+            SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data,
+                                            NULL, 0, &required_size, NULL);
+            if (required_size == 0) {
+                index++;
+                continue;
+            }
 
-            if (result) {
-                if (strstr(detail_data->DevicePath, "vid_1f3a&pid_efe8")) {
+            PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA)
+                    malloc(required_size);
+            if (detail_data == NULL) {
+                SetupDiDestroyDeviceInfoList(device_info_set);
+                return -1;
+            }
+            detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+            if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data,
+                                                detail_data, required_size, NULL, NULL)) {
+                if (match_vid_pid(detail_data->DevicePath)) {
                     ctx->dev_name = (char *) malloc(strlen(detail_data->DevicePath) + 1);
                     if (ctx->dev_name != NULL) {
                         strcpy(ctx->dev_name, detail_data->DevicePath);
+                        device_found = TRUE;
+                        free(detail_data);
+                        break;
                     } else {
                         fprintf(stderr, "ERROR: Failed to allocate memory for device name\n");
-                        GlobalFree(detail_data);
+                        free(detail_data);
                         SetupDiDestroyDeviceInfoList(device_info_set);
                         return -1;
                     }
-                    device_found = TRUE;
-                    break;
                 }
-                index++;
             }
+            free(detail_data);
+            index++;
         }
     }
 
