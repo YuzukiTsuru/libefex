@@ -24,6 +24,8 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
     while (len > 0) {
         const size_t chunk = len <= max_chunk ? len : max_chunk;
 
+        sunxi_usb_hex_dump(buf, chunk, "SEND");
+
         BOOL const result = DeviceIoControl(usb_handle, IOCTL_AWUSB_SEND_DATA, NULL,
                                             (DWORD) 0, (LPVOID) buf, chunk, &bytes_sent, NULL);
 
@@ -59,6 +61,8 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
         fprintf(stderr, "USB bulk received 0 data.\n");
         return -1;
     }
+
+    sunxi_usb_hex_dump(buf, (size_t)bytes_received, "RECV");
 
     return 0;
 }

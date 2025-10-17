@@ -87,3 +87,33 @@ int sunxi_usb_read(const struct sunxi_fel_ctx_t *ctx, const void *data, const si
     }
     return 0;
 }
+
+void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type) {
+#if DEBUG_USB_TRANSFER
+    if (!buf) {
+        fprintf(stdout, "USB %s len=0\n", type ? type : "");
+        fprintf(stdout, "<empty>\n");
+        return;
+    }
+
+    fprintf(stdout, "USB %s len=%zu\n", type ? type : "", len);
+
+    const unsigned char *p = (const unsigned char *)buf;
+    for (size_t j = 0; j < len; j += 16) {
+        fprintf(stdout, "%08zx: ", j);
+        // hex bytes
+        for (size_t i = 0; i < 16; i++) {
+            if (j + i < len) fprintf(stdout, "%02x ", p[j + i]);
+            else fprintf(stdout, "   ");
+        }
+        fputc(' ', stdout);
+        // ASCII
+        for (size_t i = 0; i < 16; i++) {
+            if (j + i >= len) fputc(' ', stdout);
+            else fputc(isprint(p[j + i]) ? p[j + i] : '.', stdout);
+        }
+        fputc('\n', stdout);
+    }
+#endif /* DEBUG_USB_TRANSFER */
+}
+

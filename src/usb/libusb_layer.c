@@ -18,6 +18,9 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 
     while (len > 0) {
         const size_t chunk = len < max_chunk ? len : max_chunk;
+
+        sunxi_usb_hex_dump(buf, chunk, "SEND");
+
         const int r = libusb_bulk_transfer(hdl, ep, (void *) buf, (int) chunk, &bytes, DEFAULT_USB_TIMEOUT);
         if (r != 0) {
             fprintf(stderr, "USB bulk send failed with error code %d reason %s\n", r, libusb_error_name(r));
@@ -39,6 +42,9 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, ssize_t len) {
             fprintf(stderr, "USB bulk receive failed with error code %d reason %s\n", r, libusb_error_name(r));
             return -1;
         }
+
+        sunxi_usb_hex_dump(buf, (size_t)bytes, "RECV");
+
         len -= bytes;
         buf += bytes;
     }

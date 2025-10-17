@@ -3,6 +3,7 @@
 
 #include "libefex.h"
 
+#define DEBUG_USB_TRANSFER 0
 #define DEFAULT_USB_TIMEOUT (10000)
 
 enum sunxi_usb_ids {
@@ -153,5 +154,27 @@ int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx);
  * @note Always call this function after you are done using the USB device to properly release resources.
  */
 int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx);
+
+/**
+ * @brief Prints USB data buffer content in hexadecimal and ASCII format
+ *
+ * This function is used for debugging purposes to print the contents of a given buffer
+ * in hexadecimal and readable ASCII character formats to standard output. Each line
+ * displays 16 bytes of data, including offset, hexadecimal representation, and corresponding
+ * ASCII characters (non-printable characters are displayed as '.'). The function first
+ * prints a header containing the transfer type and data length.
+ *
+ * @param buf Pointer to the buffer to print, or NULL to display empty data information
+ * @param len Buffer length in bytes
+ * @param type Transfer type identifier string, typically "SEND" or "RECV", used to distinguish between
+ *        send and receive operations
+ *
+ * @note When buf is NULL, it will output "USB <type> len=0" and "<empty>".
+ *       When len is 0 but buf is not NULL, it will still output the header but no data lines.
+ *
+ * @see sunxi_usb_bulk_send()
+ * @see sunxi_usb_bulk_recv()
+ */
+void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type);
 
 #endif //EFEX_USB_LAYER_H
