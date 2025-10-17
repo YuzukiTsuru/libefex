@@ -98,11 +98,10 @@ int main(const int argc, char **argv) {
     for (int i = 1; i < argc - 1; ++i) {
         if (strcmp(argv[i], "-p") == 0) {
             arch = parse_arch(argv[i + 1]);
+            // Init payloads per selection
+            sunxi_fel_payloads_init(arch);
         }
     }
-
-    // Init payloads per selection
-    sunxi_fel_payloads_init(arch);
 
     // Setup context and device
     struct sunxi_fel_ctx_t ctx = {0};
