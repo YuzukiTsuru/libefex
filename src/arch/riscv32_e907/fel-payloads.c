@@ -12,6 +12,9 @@
 // Function to read a 32-bit value from the specified address for RISC-V32 e907
 static uint32_t payloads_riscv32_e907_readl(const struct sunxi_fel_ctx_t *ctx, const uint32_t addr) {
     // payload array containing RISC-V machine code instructions for reading a value from memory
+    /* Note: Do NOT declare this array as 'static'. Some Windows drivers cannot access payload symbols marked static; 
+     * keep it non-static to ensure data visibility when writing to device memory via FEL. 
+     */
     const uint32_t payload[] = {
         WARP_INST(0b00110111000000110100000000000000), /* lui t1,0x400 */ /* Load immediate value (1 << 22) into t1 */
         WARP_INST(0b01110011001000000000001101111100), /* csrs	mxstatus,t1 */
@@ -54,6 +57,9 @@ static uint32_t payloads_riscv32_e907_readl(const struct sunxi_fel_ctx_t *ctx, c
 // Function to write a 32-bit value to the specified address for RISC-V32 e907
 static void payloads_riscv32_e907_writel(const struct sunxi_fel_ctx_t *ctx, const uint32_t value, const uint32_t addr) {
     // payload array containing RISC-V machine code instructions for writing a value to memory
+    /* Note: Do NOT declare this array as 'static'. Some Windows drivers cannot access payload symbols marked static; 
+     * keep it non-static to ensure data visibility when writing to device memory via FEL. 
+     */
     const uint32_t payload[] = {
         WARP_INST(0b00110111000000110100000000000000), /* lui t1,0x400 */ /* Load immediate value (1 << 22) into t1 */
         WARP_INST(0b01110011001000000000001101111100), /* csrs	mxstatus,t1 */ /* Set the corresponding bit in csr mxstatus */

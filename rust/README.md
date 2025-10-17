@@ -43,23 +43,23 @@ Here is a basic usage example:
 use libefex::{Context, Arch, readl, writel};
 
 fn main() {
-    // 创建Context对象
+    // Create Context object
     let mut ctx = Context::new().expect("Failed to create context");
     
-    // 扫描设备
+    // Scan device
     if ctx.scan_usb_device().is_ok() {
         println!("FEL device found!");
         
-        // 初始化USB连接
+        // Initialize USB connection
         ctx.usb_init().expect("USB initialization failed");
         
-        // 初始化FEL模式
+        // Initialize FEL mode
         ctx.fel_init().expect("FEL initialization failed");
         
-        // 初始化特定架构的负载
+        // Initialize payload for specific architecture
         libefex::payloads_init(Arch::ARM32).expect("Payload initialization failed");
         
-        // 内存操作示例
+        // Memory operation example
         let address = 0x10000000;
         writel(&ctx, 0x12345678, address).expect("Failed to write memory");
         let value = readl(&ctx, address).expect("Failed to read memory");

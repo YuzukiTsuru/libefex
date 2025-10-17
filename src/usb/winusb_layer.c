@@ -143,12 +143,12 @@ int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx) {
 
 int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx) {
     if (ctx) {
-        /* 释放设备句柄 */
+        /* Release device handle */
         if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {
             CloseHandle((HANDLE) ctx->hdl);
             ctx->hdl = NULL;
         }
-        /* 释放设备名称内存 */
+        /* Free device name memory */
         if (ctx->dev_name != NULL) {
             free(ctx->dev_name);
             ctx->dev_name = NULL;
