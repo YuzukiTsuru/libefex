@@ -14,8 +14,11 @@ include_directories(
 
 add_subdirectory(src)
 
-# tests for lib
+# app CLI
 include(cmake/add_test_case.cmake)
+add_executable_with_libraries(efex-cli app/efex-cli.c)
+
+# tests for lib
 add_executable_with_libraries(scan_device_test test/scan_device.c)
 add_executable_with_libraries(writel_readl test/writel_readl.c)
 add_executable_with_libraries(hexdump_brom test/hexdump_brom.c)
