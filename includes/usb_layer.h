@@ -11,12 +11,12 @@ enum sunxi_usb_ids {
     SUNXI_USB_PRODUCT = 0xefe8,
 };
 
-#define SUNXI_FEL_CMD_LEN (0xc)
+#define SUNXI_EFEX_CMD_LEN (0xc)
 #define SUNXI_USB_REQ_MAGIC "AWUC"
 #define SUNXI_USB_RSP_MAGIC "AWUS"
-#define SUNXI_VERIFY_RSP_MAGIC "AWUSBFEX"
+#define SUNXI_VERIFY_RSP_MAGIC "AWUSBEFEX"
 
-enum sunxi_fel_usb_request_t {
+enum sunxi_efex_usb_request_t {
     AW_USB_READ = 0x11,
     AW_USB_WRITE = 0x12,
 };
@@ -66,7 +66,7 @@ int sunxi_usb_bulk_recv(void *handle, int ep, char *buf, ssize_t len);
  *
  * @note This function uses libusb control transfer for sending requests.
  */
-int sunxi_send_usb_request(const struct sunxi_fel_ctx_t *ctx, enum sunxi_fel_usb_request_t type,
+int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_usb_request_t type,
                            size_t length);
 
 /**
@@ -80,7 +80,7 @@ int sunxi_send_usb_request(const struct sunxi_fel_ctx_t *ctx, enum sunxi_fel_usb
  *
  * @note The function uses libusb control transfer to read the response.
  */
-int sunxi_read_usb_response(const struct sunxi_fel_ctx_t *ctx);
+int sunxi_read_usb_response(const struct sunxi_efex_ctx_t *ctx);
 
 /**
  * @brief Writes data to the USB device.
@@ -94,7 +94,7 @@ int sunxi_read_usb_response(const struct sunxi_fel_ctx_t *ctx);
  *
  * @note This function uses libusb_bulk_transfer to perform the write operation.
  */
-int sunxi_usb_write(const struct sunxi_fel_ctx_t *ctx, const void *buf, size_t len);
+int sunxi_usb_write(const struct sunxi_efex_ctx_t *ctx, const void *buf, size_t len);
 
 /**
  * @brief Reads data from the USB device.
@@ -109,7 +109,7 @@ int sunxi_usb_write(const struct sunxi_fel_ctx_t *ctx, const void *buf, size_t l
  *
  * @note This function uses libusb_bulk_transfer to perform the read operation.
  */
-int sunxi_usb_read(const struct sunxi_fel_ctx_t *ctx, const void *data, size_t len);
+int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, size_t len);
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
@@ -125,7 +125,7 @@ int sunxi_usb_read(const struct sunxi_fel_ctx_t *ctx, const void *data, size_t l
  *
  * @note This function uses the libusb library for USB device enumeration and connection.
  */
-int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx);
+int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx);
 
 /**
  * @brief Initializes the USB context for interacting with USB devices.
@@ -139,7 +139,7 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx);
  *
  * @note This function requires libusb to be properly installed and initialized before use.
  */
-int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx);
+int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx);
 
 /**
  * @brief Cleans up and releases USB context resources.
@@ -153,7 +153,7 @@ int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx);
  *
  * @note Always call this function after you are done using the USB device to properly release resources.
  */
-int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx);
+int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx);
 
 /**
  * @brief Prints USB data buffer content in hexadecimal and ASCII format

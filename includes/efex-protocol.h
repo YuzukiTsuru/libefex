@@ -1,27 +1,27 @@
-#ifndef EFEX_FEL_PROTOCOL_H
-#define EFEX_FEL_PROTOCOL_H
+#ifndef EFEX_PROTOCOL_H
+#define EFEX_PROTOCOL_H
 
 #include <stdint.h>
 #include "libefex.h"
 #include "compiler.h"
 
-enum sunxi_fel_cmd_t {
-    FEL_CMD_VERIFY_DEVICE = 0x1,
-    FEL_CMD_SWITCH_ROLE = 0x2,
-    FEL_CMD_IS_READY = 0x3,
-    FEL_CMD_GET_CMD_SET_VER = 0x4,
-    FEL_CMD_DISCONNECT = 0x10,
-    FEL_CMD_WRITE = 0x101,
-    FEL_CMD_EXEC = 0x102,
-    FEL_CMD_READ = 0x103,
+enum sunxi_efex_cmd_t {
+    EFEX_CMD_VERIFY_DEVICE = 0x1,
+    EFEX_CMD_SWITCH_ROLE = 0x2,
+    EFEX_CMD_IS_READY = 0x3,
+    EFEX_CMD_GET_CMD_SET_VER = 0x4,
+    EFEX_CMD_DISCONNECT = 0x10,
+    EFEX_CMD_WRITE = 0x101,
+    EFEX_CMD_EXEC = 0x102,
+    EFEX_CMD_READ = 0x103,
 };
 
 enum sunxi_verify_device_mode_t {
-    AW_DEVICE_MODE_NULL = 0x0,
-    AW_DEVICE_MODE_FEL = 0x1,
-    AW_DEVICE_MODE_SRV = 0x2,
-    AW_DEVICE_MODE_UPDATE_COOL = 0x3,
-    AW_DEVICE_MODE_UPDATE_HOT = 0x4,
+    DEVICE_MODE_NULL = 0x0,
+    DEVICE_MODE_FEL = 0x1,
+    DEVICE_MODE_SRV = 0x2,
+    DEVICE_MODE_UPDATE_COOL = 0x3,
+    DEVICE_MODE_UPDATE_HOT = 0x4,
 };
 
 EFEX_PACKED_BEGIN
@@ -52,7 +52,7 @@ struct sunxi_usb_response_t {
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
-struct sunxi_fel_request_t {
+struct sunxi_efex_request_t {
     uint16_t cmd;
     uint16_t tag;
     uint32_t address;
@@ -62,7 +62,7 @@ struct sunxi_fel_request_t {
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
-struct sunxi_fel_response_t {
+struct sunxi_efex_response_t {
     uint16_t magic;
     uint16_t tag;
     uint8_t status;
@@ -70,7 +70,7 @@ struct sunxi_fel_response_t {
 } EFEX_PACKED;
 EFEX_PACKED_END
 
-#define FEL_CODE_MAX_SIZE (32 * 1024)
+#define EFEX_CODE_MAX_SIZE (32 * 1024)
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
@@ -80,25 +80,47 @@ EFEX_PACKED_END
  * and SUNXI_USB_PRODUCT IDs. If such a device is found, it attempts to open a connection to it
  * and stores the handle in the provided context.
  *
- * @param ctx A pointer to the sunxi_fel_ctx_t structure, which will hold the device handle if found.
+ * @param ctx A pointer to the sunxi_efex_ctx_t structure, which will hold the device handle if found.
  * @return 0 on success, or -1 if an error occurred (e.g., unable to retrieve device descriptor or
  *         open a connection to the device).
  *
  * @note This function uses the libusb library for USB device enumeration and connection.
  */
-int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx);
+int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx);
 
 /**
- * @brief Initialize the FEL context.
+ * @brief Get the device mode from the EFEX context.
+ *
+ * This function retrieves the current device mode from the provided EFEX context.
+ *
+ * @param[in] ctx Pointer to the context structure.
+ *
+ * @return The current device mode as an enumeration value of type sunxi_verify_device_mode_t.
+ */
+enum sunxi_verify_device_mode_t sunxi_efex_get_device_mode(const struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Get the device mode as a string representation.
+ *
+ * This function converts the device mode enumeration value to a human-readable string.
+ *
+ * @param[in] ctx Pointer to the context structure.
+ *
+ * @return A null-terminated string representing the device mode.
+ */
+const char *sunxi_efex_get_device_mode_str(const struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Initialize the EFEX context.
  *
  * This function initializes the given context, setting up necessary
- * configurations and resources for future FEL operations.
+ * configurations and resources for future EFEX operations.
  *
  * @param[in] ctx Pointer to the context structure.
  *
  * @return Returns 0 on success, or a negative error code on failure.
  */
-int sunxi_fel_init(struct sunxi_fel_ctx_t *ctx);
+int sunxi_efex_init(struct sunxi_efex_ctx_t *ctx);
 
 /**
  * @brief Execute a command at the given address.
@@ -109,7 +131,7 @@ int sunxi_fel_init(struct sunxi_fel_ctx_t *ctx);
  * @param[in] ctx Pointer to the context structure.
  * @param[in] addr Address where the command will be executed.
  */
-void sunxi_fel_exec(const struct sunxi_fel_ctx_t *ctx, uint32_t addr);
+void sunxi_efex_exec(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
 
 /**
  * @brief Read a 32-bit value from the specified memory address.
@@ -121,7 +143,7 @@ void sunxi_fel_exec(const struct sunxi_fel_ctx_t *ctx, uint32_t addr);
  *
  * @return The 32-bit value read from the memory address.
  */
-uint32_t sunxi_fel_readl(const struct sunxi_fel_ctx_t *ctx, uint32_t addr);
+uint32_t sunxi_efex_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
 
 /**
  * @brief Write a 32-bit value to the specified memory address.
@@ -132,7 +154,7 @@ uint32_t sunxi_fel_readl(const struct sunxi_fel_ctx_t *ctx, uint32_t addr);
  * @param[in] val The 32-bit value to write to the memory address.
  * @param[in] addr The memory address where the value will be written.
  */
-void sunxi_fel_writel(const struct sunxi_fel_ctx_t *ctx, uint32_t val, uint32_t addr);
+void sunxi_efex_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t val, uint32_t addr);
 
 /**
  * @brief Read a block of memory from the specified address.
@@ -144,7 +166,7 @@ void sunxi_fel_writel(const struct sunxi_fel_ctx_t *ctx, uint32_t val, uint32_t 
  * @param[out] buf Pointer to the buffer where the data will be stored.
  * @param[in] len The number of bytes to read from the memory.
  */
-void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
+void sunxi_efex_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
 
 /**
  * @brief Write a block of memory to the specified address.
@@ -156,6 +178,6 @@ void sunxi_fel_read_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, con
  * @param[in] buf Pointer to the buffer containing the data to be written.
  * @param[in] len The number of bytes to write to the memory.
  */
-void sunxi_fel_write_memory(const struct sunxi_fel_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
+void sunxi_efex_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
 
-#endif //EFEX_FEL_PROTOCOL_H
+#endif //EFEX_PROTOCOL_H

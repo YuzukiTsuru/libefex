@@ -8,7 +8,7 @@
 
 #include "ending.h"
 #include "usb_layer.h"
-#include "fel-protocol.h"
+#include "efex-protocol.h"
 #include "compiler.h"
 
 int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
@@ -51,7 +51,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, ssize_t len) {
     return 0;
 }
 
-int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
     libusb_device **list = NULL;
     libusb_context *context = NULL;
     int device_found = 0;
@@ -81,7 +81,7 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
 }
 
 
-int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
     if (ctx && ctx->hdl) {
         libusb_device_handle *libusb_hdl = (libusb_device_handle *)ctx->hdl;
         struct libusb_config_descriptor *config;
@@ -114,7 +114,7 @@ int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx) {
     return -1;
 }
 
-int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
     if (ctx && ctx->hdl) {
         libusb_device_handle *libusb_hdl = (libusb_device_handle *)ctx->hdl;
         libusb_close(libusb_hdl);

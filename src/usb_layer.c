@@ -6,17 +6,17 @@
 
 #include "ending.h"
 #include "usb_layer.h"
-#include "fel-protocol.h"
+#include "efex-protocol.h"
 #include "compiler.h"
 
 
-int sunxi_send_usb_request(const struct sunxi_fel_ctx_t *ctx, const enum sunxi_fel_usb_request_t type,
+int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_usb_request_t type,
                            const size_t length) {
     struct sunxi_usb_request_t req = {
             .magic = SUNXI_USB_REQ_MAGIC,
             .tab = 0x0,
             .data_length = cpu_to_le32(length),
-            .cmd_length = SUNXI_FEL_CMD_LEN,
+            .cmd_length = SUNXI_EFEX_CMD_LEN,
             .cmd_package[0] = type
     };
     req.cmd_length = (uint8_t) req.data_length;
@@ -29,7 +29,7 @@ int sunxi_send_usb_request(const struct sunxi_fel_ctx_t *ctx, const enum sunxi_f
     return 0;
 }
 
-int sunxi_read_usb_response(const struct sunxi_fel_ctx_t *ctx) {
+int sunxi_read_usb_response(const struct sunxi_efex_ctx_t *ctx) {
     struct sunxi_usb_response_t resp = {0};
 
     const int ret = sunxi_usb_bulk_recv(ctx->hdl, ctx->epin, (char *) &resp, sizeof(resp));
@@ -46,7 +46,7 @@ int sunxi_read_usb_response(const struct sunxi_fel_ctx_t *ctx) {
     return resp.status;
 }
 
-int sunxi_usb_write(const struct sunxi_fel_ctx_t *ctx, const void *buf, const size_t len) {
+int sunxi_usb_write(const struct sunxi_efex_ctx_t *ctx, const void *buf, const size_t len) {
     int ret = sunxi_send_usb_request(ctx, AW_USB_WRITE, len);
     if (ret != 0) {
         fprintf(stderr, "Failed to send USB request for writing\n");
@@ -67,7 +67,7 @@ int sunxi_usb_write(const struct sunxi_fel_ctx_t *ctx, const void *buf, const si
     return 0;
 }
 
-int sunxi_usb_read(const struct sunxi_fel_ctx_t *ctx, const void *data, const size_t len) {
+int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, const size_t len) {
     int ret = sunxi_send_usb_request(ctx, AW_USB_READ, len);
     if (ret != 0) {
         fprintf(stderr, "Failed to send USB request for reading\n");

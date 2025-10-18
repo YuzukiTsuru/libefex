@@ -1,10 +1,10 @@
 # libefex Rust Bindings
 
-Rust language binding library for interacting with Allwinner chips in FEL mode.
+Rust language binding library for interacting with Allwinner chips in EFEX mode.
 
 ## Features
 
-- Scan and connect to Allwinner devices in FEL mode
+- Scan and connect to Allwinner devices in EFEX mode
 - Read and write device memory
 - Execute code in device memory
 - Support for multiple processor architectures (ARM32, AARCH64, RISC-V32 E907)

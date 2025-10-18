@@ -5,7 +5,7 @@
 
 #include "libefex.h"
 #include "usb_layer.h"
-#include "fel-protocol.h"
+#include "efex-protocol.h"
 
 void hexdump(const uint32_t addr, const void *buf, const size_t len) {
     const unsigned char *p = buf;
@@ -31,7 +31,7 @@ void hexdump(const uint32_t addr, const void *buf, const size_t len) {
 }
 
 int main() {
-    struct sunxi_fel_ctx_t ctx = {0};
+    struct sunxi_efex_ctx_t ctx = {0};
     int ret = 0;
 
     // Allocate memory for buf (assuming buf is a pointer to a byte array)
@@ -45,26 +45,26 @@ int main() {
 
     ret = sunxi_scan_usb_device(&ctx);
     if (ret <= 0) {
-        fprintf(stderr, "ERROR: Can't get valid FEL device\r\n");
+        fprintf(stderr, "ERROR: Can't get valid EFEX device\r\n");
         free(buf); // Free the allocated memory before exiting
         return -1;
     }
 
     ret = sunxi_usb_init(&ctx);
     if (ret <= 0) {
-        fprintf(stderr, "ERROR: FEL device USB init failed\r\n");
+        fprintf(stderr, "ERROR: EFEX device USB init failed\r\n");
         free(buf); // Free the allocated memory before exiting
         return -1;
     }
 
-    ret = sunxi_fel_init(&ctx);
+    ret = sunxi_efex_init(&ctx);
     if (ret < 0) {
-        fprintf(stderr, "ERROR: FEL device init failed\r\n");
+        fprintf(stderr, "ERROR: EFEX device init failed\r\n");
         free(buf); // Free the allocated memory before exiting
         return -1;
     }
 
-    printf("Found FEL device\n");
+    printf("Found EFEX device\n");
     printf("Magic: %s\n", ctx.resp.magic);
     printf("ID: 0x%08x\n", ctx.resp.id);
     printf("Firmware: 0x%08x\n", ctx.resp.firmware);
@@ -79,10 +79,10 @@ int main() {
     }
     printf("\n");
 
-    sunxi_fel_write_memory(&ctx, 0x120000, "Hello, FEL!", 12);
+    sunxi_efex_write_memory(&ctx, 0x120000, "Hello, EFEX!", 12);
 
     // Read memory into buf
-    sunxi_fel_read_memory(&ctx, 0x120000, buf, 0x100);
+    sunxi_efex_read_memory(&ctx, 0x120000, buf, 0x100);
 
     // Output the contents of buf in hex
     hexdump(0x0, buf, 0x100);

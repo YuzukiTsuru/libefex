@@ -6,11 +6,11 @@
 
 #include "ending.h"
 #include "usb_layer.h"
-#include "fel-payloads.h"
-#include "fel-protocol.h"
+#include "efex-payloads.h"
+#include "efex-protocol.h"
 
 // Function to read a 32-bit value from the specified address for RISC-V32 e907
-static uint32_t payloads_riscv32_e907_readl(const struct sunxi_fel_ctx_t *ctx, const uint32_t addr) {
+static uint32_t payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {
     // payload array containing RISC-V machine code instructions for reading a value from memory
     /* Note: Do NOT declare this array as 'static'. Some Windows drivers cannot access payload symbols marked static; 
      * keep it non-static to ensure data visibility when writing to device memory via FEL. 
@@ -41,13 +41,13 @@ static uint32_t payloads_riscv32_e907_readl(const struct sunxi_fel_ctx_t *ctx, c
     uint32_t val = 0;
 
     // Write the payload to the specified memory address in the context
-    sunxi_fel_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
+    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
     // Write the address to be read from into memory
-    sunxi_fel_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) &addr_le32, sizeof(addr_le32));
+    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) &addr_le32, sizeof(addr_le32));
     // Execute the RISC-V32 instructions starting at the given memory address
-    sunxi_fel_exec(ctx, ctx->resp.data_start_address);
+    sunxi_efex_exec(ctx, ctx->resp.data_start_address);
     // Read the value from memory after execution
-    sunxi_fel_read_memory(ctx, ctx->resp.data_start_address + sizeof(payload) + sizeof(addr_le32), (void *) &val,
+    sunxi_efex_read_memory(ctx, ctx->resp.data_start_address + sizeof(payload) + sizeof(addr_le32), (void *) &val,
                           sizeof(val));
 
     // Return the value read from memory after converting it to host byte order
@@ -55,7 +55,7 @@ static uint32_t payloads_riscv32_e907_readl(const struct sunxi_fel_ctx_t *ctx, c
 }
 
 // Function to write a 32-bit value to the specified address for RISC-V32 e907
-static void payloads_riscv32_e907_writel(const struct sunxi_fel_ctx_t *ctx, const uint32_t value, const uint32_t addr) {
+static void payloads_riscv32_e907_writel(const struct sunxi_efex_ctx_t *ctx, const uint32_t value, const uint32_t addr) {
     // payload array containing RISC-V machine code instructions for writing a value to memory
     /* Note: Do NOT declare this array as 'static'. Some Windows drivers cannot access payload symbols marked static; 
      * keep it non-static to ensure data visibility when writing to device memory via FEL. 
@@ -85,17 +85,17 @@ static void payloads_riscv32_e907_writel(const struct sunxi_fel_ctx_t *ctx, cons
     };
 
     // Write the payload to the specified memory address in the context
-    sunxi_fel_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
+    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
     // Write the parameters (address and value) to memory
-    sunxi_fel_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) params, sizeof(params));
+    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) params, sizeof(params));
     // Execute the RISC-V32 instructions starting at the given memory address
-    sunxi_fel_exec(ctx, ctx->resp.data_start_address);
+    sunxi_efex_exec(ctx, ctx->resp.data_start_address);
 }
 
 // Structure defining the operations for the riscv32_e907 platform
 struct payloads_ops riscv32_e907_ops = {
     .name = "riscv32_e907",
-    .arch = PAYLOAD_ARCH_RISCV32_E907,
+    .arch = ARCH_RISCV32_E907,
     .readl = payloads_riscv32_e907_readl,
     .writel = payloads_riscv32_e907_writel,
 };

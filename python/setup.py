@@ -75,10 +75,10 @@ ext = Extension(
     name='libefex',
     sources=[
         'libefex-binding.c',
-        os.path.abspath(os.path.join('..', 'src', 'fel-protocol.c')),
+        os.path.abspath(os.path.join('..', 'src', 'efex-protocol.c')),
         os.path.abspath(os.path.join('..', 'src', 'usb_layer.c')),
-        os.path.abspath(os.path.join('..', 'src', 'fel-payloads.c')),
-        os.path.abspath(os.path.join('..', 'src', 'arch', 'riscv32_e907', 'fel-payloads.c'))
+        os.path.abspath(os.path.join('..', 'src', 'efex-payloads.c')),
+        os.path.abspath(os.path.join('..', 'src', 'arch', 'riscv32_e907', 'efex-payloads.c'))
     ],
     include_dirs=get_include_dirs(),
     libraries=get_libraries(),
@@ -93,8 +93,8 @@ ext = Extension(
 setup_args = dict(
     name='libefex',
     version='0.1.0',
-    description='Python bindings for libefex - Allwinner FEL mode interaction library',
-    long_description='Python bindings for libefex, a cross-platform library for interacting with Allwinner chips in FEL mode.',
+    description='Python bindings for libefex - Allwinner EFEX mode interaction library',
+    long_description='Python bindings for libefex, a cross-platform library for interacting with Allwinner chips in EFEX mode.'
     author='libefex developers',
     url='https://github.com/YuzukiTsuru/libefex',
     packages=[],  # No Python packages, just the C extension

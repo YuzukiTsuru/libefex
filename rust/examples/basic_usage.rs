@@ -22,10 +22,10 @@ fn main() {
     
     // Scan for devices
     match ctx.scan_usb_device() {
-        Ok(true) => println!("\nFEL device found!") ,
+        Ok(true) => println!("\nEFEX device found!") ,
         Ok(false) | Err(_) => {
-            println!("\nNo FEL device found");
-            println!("Note: Put your device in FEL mode and try again.");
+            println!("\nNo EFEX device found");
+            println!("Note: Put your device in EFEX mode and try again.");
             return;
         }
     }
@@ -37,12 +37,12 @@ fn main() {
     }
     println!("USB initialization successful!");
     
-    // Initialize FEL mode
-    if let Err(err) = ctx.fel_init() {
-        eprintln!("FEL initialization failed: {:?}", err);
+    // Initialize EFEX mode
+    if let Err(err) = ctx.efex_init() {
+        eprintln!("EFEX initialization failed: {:?}", err);
         return;
     }
-    println!("FEL initialization successful!");
+    println!("EFEX initialization successful!");
     
     // Get device response data
     if let Ok(resp) = ctx.get_device_resp() {

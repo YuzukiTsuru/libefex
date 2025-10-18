@@ -5,9 +5,9 @@ use std::ptr;
 use std::ffi::CString;
 use std::ops::Drop;
 
-/// FEL device context struct
+/// EFEX device context struct
 pub struct Context {
-    ptr: *mut super::sunxi_fel_ctx_t,
+    ptr: *mut super::sunxi_efex_ctx_t,
 }
 
 impl Context {
@@ -15,8 +15,8 @@ impl Context {
     pub fn new() -> Result<Self, EfexError> {
         unsafe {
             // Allocate memory
-            let ctx_ptr = libc::calloc(1, std::mem::size_of::<super::sunxi_fel_ctx_t>())
-                as *mut super::sunxi_fel_ctx_t;
+            let ctx_ptr = libc::calloc(1, std::mem::size_of::<super::sunxi_efex_ctx_t>())
+                as *mut super::sunxi_efex_ctx_t;
             
             if ctx_ptr.is_null() {
                 return Err(EfexError::Unknown("Failed to allocate memory for context".to_string()));
@@ -27,7 +27,7 @@ impl Context {
     }
     
     /// Get internal C pointer (for internal use only)
-    pub(crate) fn as_ptr(&self) -> *mut super::sunxi_fel_ctx_t {
+    pub(crate) fn as_ptr(&self) -> *mut super::sunxi_efex_ctx_t {
         self.ptr
     }
     
@@ -55,14 +55,14 @@ impl Context {
         }
     }
     
-    /// Initialize FEL mode
-    pub fn fel_init(&mut self) -> Result<(), EfexError> {
+    /// Initialize EFEX mode
+    pub fn efex_init(&mut self) -> Result<(), EfexError> {
         unsafe {
-            let result = super::sunxi_fel_init(self.ptr);
+            let result = super::sunxi_efex_init(self.ptr);
             if result >= 0 {
                 Ok(())
             } else {
-                Err(EfexError::FelInitializationFailed)
+                Err(EfexError::EfexInitializationFailed)
             }
         }
     }

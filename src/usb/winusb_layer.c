@@ -5,7 +5,7 @@
 
 #include "ending.h"
 #include "usb_layer.h"
-#include "fel-protocol.h"
+#include "efex-protocol.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -85,7 +85,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
     return 0;
 }
 
-int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
     SP_DEVICE_INTERFACE_DATA interface_data;
     ULONG index = 0;
     BOOL device_found = FALSE;
@@ -151,7 +151,7 @@ int sunxi_scan_usb_device(struct sunxi_fel_ctx_t *ctx) {
     return device_found;
 }
 
-int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
     if (!ctx || !ctx->dev_name) {
         fprintf(stderr, "ERROR: Invalid context or device name\n");
         return -1;
@@ -168,7 +168,7 @@ int sunxi_usb_init(struct sunxi_fel_ctx_t *ctx) {
     return 1;
 }
 
-int sunxi_usb_exit(struct sunxi_fel_ctx_t *ctx) {
+int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
     if (ctx) {
         /* Release device handle */
         if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {

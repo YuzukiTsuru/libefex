@@ -10,12 +10,12 @@ pub enum EfexError {
     UsbError(String),
     
     /// Device not found error
-    #[error("No FEL device found")]
+    #[error("No EFEX device found")]
     DeviceNotFound,
     
-    /// FEL initialization error
-    #[error("FEL initialization failed")]
-    FelInitializationFailed,
+    /// EFEX initialization error
+    #[error("EFEX initialization failed")]
+    EfexInitializationFailed,
     
     /// Memory operation error
     #[error("Memory operation failed: {0}")]

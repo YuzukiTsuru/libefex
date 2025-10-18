@@ -1,31 +1,30 @@
-#include <fel-protocol.h>
 #include <stdio.h>
 
 #include "libefex.h"
 #include "usb_layer.h"
-#include "fel-protocol.h"
+#include "efex-protocol.h"
 
 int main() {
-    struct sunxi_fel_ctx_t ctx = {0};
+    struct sunxi_efex_ctx_t ctx = {0};
     int ret = 0;
 
     ret = sunxi_scan_usb_device(&ctx);
     if (ret <= 0) {
-        fprintf(stderr, "ERROR: Can't get vaild FEL device\r\n");
+        fprintf(stderr, "ERROR: Can't get vaild EFEX device\r\n");
         return -1;
     }
     ret = sunxi_usb_init(&ctx);
     if (ret <= 0) {
-        fprintf(stderr, "ERROR: FEL device USB init failed\r\n");
+        fprintf(stderr, "ERROR: EFEX device USB init failed\r\n");
         return -1;
     }
-    ret = sunxi_fel_init(&ctx);
+    ret = sunxi_efex_init(&ctx);
     if (ret < 0) {
-        fprintf(stderr, "ERROR: FEL device init failed\r\n");
+        fprintf(stderr, "ERROR: EFEX device init failed\r\n");
         return -1;
     }
 
-    printf("Found FEL device\n");
+    printf("Found EFEX device\n");
     printf("Magic: %s\n", ctx.resp.magic);
     printf("ID: 0x%08x\n", ctx.resp.id);
     printf("Firmware: 0x%08x\n", ctx.resp.firmware);
@@ -40,7 +39,7 @@ int main() {
     }
     printf("\n");
 
-    printf("Orig: 0x%08x\n", sunxi_fel_readl(&ctx, ctx.resp.data_start_address));
-    sunxi_fel_writel(&ctx, 0x55AA55AA, ctx.resp.data_start_address);
-    printf("New: 0x%08x\n", sunxi_fel_readl(&ctx, ctx.resp.data_start_address));
+    printf("Orig: 0x%08x\n", sunxi_efex_readl(&ctx, ctx.resp.data_start_address));
+    sunxi_efex_writel(&ctx, 0x55AA55AA, ctx.resp.data_start_address);
+    printf("New: 0x%08x\n", sunxi_efex_readl(&ctx, ctx.resp.data_start_address));
 }

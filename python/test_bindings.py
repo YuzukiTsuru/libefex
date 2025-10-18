@@ -28,9 +28,9 @@ def test_device_scan():
     print(f"Scan result: {scan_result}")
     
     if scan_result > 0:
-        print("FEL device found!")
+        print("EFEX device found!")
     else:
-        print("No FEL device found")
+        print("No EFEX device found")
         return ctx, False
     
     return ctx, True
@@ -49,15 +49,15 @@ def test_usb_initialization(ctx):
         print("USB initialization failed")
         return False
 
-def test_fel_initialization(ctx):
-    """Test FEL initialization functionality"""
-    print_separator("FEL Initialization Test")
+def test_efex_initialization(ctx):
+    """Test EFEX initialization functionality"""
+    print_separator("EFEX Initialization Test")
     
-    fel_init_result = libefex.fel_init(ctx)
-    print(f"FEL initialization result: {fel_init_result}")
+    efex_init_result = libefex.efex_init(ctx)
+    print(f"EFEX initialization result: {efex_init_result}")
     
-    if fel_init_result >= 0:
-        print("FEL initialization successful!")
+    if efex_init_result >= 0:
+        print("EFEX initialization successful!")
         
         # Get and print device response data
         try:
@@ -76,7 +76,7 @@ def test_fel_initialization(ctx):
         
         return True
     else:
-        print("FEL initialization failed")
+        print("EFEX initialization failed")
         return False
 
 def test_payloads_initialization():
@@ -138,8 +138,8 @@ def run_tests():
     # Test device scanning
     ctx, device_found = test_device_scan()
     if not device_found:
-        print("\nNote: No FEL device found, cannot proceed with subsequent tests.")
-        print("Please put the device in FEL mode and try again.")
+        print("\nNote: No EFEX device found, cannot proceed with subsequent tests.")
+        print("Please put the device in EFEX mode and try again.")
         return
     
     # Test USB initialization
@@ -147,9 +147,9 @@ def run_tests():
         print("USB initialization failed, cannot proceed with subsequent tests.")
         return
     
-    # Test FEL initialization
-    if not test_fel_initialization(ctx):
-        print("FEL initialization failed, cannot proceed with subsequent tests.")
+    # Test EFEX initialization
+    if not test_efex_initialization(ctx):
+        print("EFEX initialization failed, cannot proceed with subsequent tests.")
         return
     
     # Test payload initialization
