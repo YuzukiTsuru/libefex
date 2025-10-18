@@ -5,7 +5,7 @@
 #include "libefex.h"
 #include "compiler.h"
 
-enum sunxi_efex_payloads_arch {
+enum sunxi_efex_fel_payloads_arch {
     ARCH_ARM32,
     ARCH_AARCH64,
     ARCH_RISCV32_E907,
@@ -33,7 +33,7 @@ struct payloads_ops {
      * This field specifies the architecture type of the payload.
      * It uses an enumeration type, sunxi_efex_payloads_arch, to define different supported architectures.
      */
-    enum sunxi_efex_payloads_arch arch;
+    enum sunxi_efex_fel_payloads_arch arch;
 
     /**
      * @brief Function to read a 32-bit value from the given address.
@@ -85,7 +85,7 @@ struct payloads_ops {
  * @param arch The architecture type to initialize payloads for.
  *             This can be an enum value representing a specific architecture (e.g., ARM, RISC-V).
  */
-void sunxi_efex_payloads_init(enum sunxi_efex_payloads_arch arch);
+void sunxi_efex_fel_payloads_init(enum sunxi_efex_fel_payloads_arch arch);
 
 /**
  * @brief Retrieves the current payload operations.
@@ -95,7 +95,7 @@ void sunxi_efex_payloads_init(enum sunxi_efex_payloads_arch arch);
  *
  * @return A pointer to a structure containing the current payload operations.
  */
-struct payloads_ops *sunxi_efex_get_current_payload();
+struct payloads_ops *sunxi_efex_fel_get_current_payload();
 
 /**
  * @brief Reads a 32-bit value from the specified address.
@@ -108,7 +108,7 @@ struct payloads_ops *sunxi_efex_get_current_payload();
  *
  * @return The 32-bit value read from the specified address.
  */
-uint32_t sunxi_efex_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
+uint32_t sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
 
 /**
  * @brief Writes a 32-bit value to the specified address.
@@ -120,6 +120,6 @@ uint32_t sunxi_efex_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t 
  * @param value The 32-bit value to write to memory.
  * @param addr The address to which the value will be written.
  */
-void sunxi_efex_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
+void sunxi_efex_fel_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
 
 #endif //EFEX_PAYLOADS_H

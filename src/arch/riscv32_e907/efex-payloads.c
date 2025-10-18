@@ -41,13 +41,13 @@ static uint32_t payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, 
     uint32_t val = 0;
 
     // Write the payload to the specified memory address in the context
-    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
+    sunxi_efex_fel_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
     // Write the address to be read from into memory
-    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) &addr_le32, sizeof(addr_le32));
+    sunxi_efex_fel_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) &addr_le32, sizeof(addr_le32));
     // Execute the RISC-V32 instructions starting at the given memory address
-    sunxi_efex_exec(ctx, ctx->resp.data_start_address);
+    sunxi_efex_fel_exec(ctx, ctx->resp.data_start_address);
     // Read the value from memory after execution
-    sunxi_efex_read_memory(ctx, ctx->resp.data_start_address + sizeof(payload) + sizeof(addr_le32), (void *) &val,
+    sunxi_efex_fel_read_memory(ctx, ctx->resp.data_start_address + sizeof(payload) + sizeof(addr_le32), (void *) &val,
                           sizeof(val));
 
     // Return the value read from memory after converting it to host byte order
@@ -85,11 +85,11 @@ static void payloads_riscv32_e907_writel(const struct sunxi_efex_ctx_t *ctx, con
     };
 
     // Write the payload to the specified memory address in the context
-    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
+    sunxi_efex_fel_write_memory(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
     // Write the parameters (address and value) to memory
-    sunxi_efex_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) params, sizeof(params));
+    sunxi_efex_fel_write_memory(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) params, sizeof(params));
     // Execute the RISC-V32 instructions starting at the given memory address
-    sunxi_efex_exec(ctx, ctx->resp.data_start_address);
+    sunxi_efex_fel_exec(ctx, ctx->resp.data_start_address);
 }
 
 // Structure defining the operations for the riscv32_e907 platform

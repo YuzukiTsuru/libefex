@@ -16,9 +16,9 @@ pub enum Arch {
 impl Arch {
     pub(crate) fn to_raw(&self) -> i32 {
         match self {
-            Arch::ARM32 => super::PAYLOAD_ARCH_ARM32 as i32,
-            Arch::AARCH64 => super::PAYLOAD_ARCH_AARCH64 as i32,
-            Arch::RISCV32_E907 => super::PAYLOAD_ARCH_RISCV32_E907 as i32,
+            Arch::ARM32 => super::ARCH_ARM32 as i32,
+            Arch::AARCH64 => super::ARCH_AARCH64 as i32,
+            Arch::RISCV32_E907 => super::ARCH_RISCV32_E907 as i32,
         }
     }
 }

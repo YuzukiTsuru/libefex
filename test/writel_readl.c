@@ -39,7 +39,7 @@ int main() {
     }
     printf("\n");
 
-    printf("Orig: 0x%08x\n", sunxi_efex_readl(&ctx, ctx.resp.data_start_address));
-    sunxi_efex_writel(&ctx, 0x55AA55AA, ctx.resp.data_start_address);
-    printf("New: 0x%08x\n", sunxi_efex_readl(&ctx, ctx.resp.data_start_address));
+    printf("Orig: 0x%08x\n", sunxi_efex_fel_readl(&ctx, ctx.resp.data_start_address));
+    sunxi_efex_fel_writel(&ctx, 0x55AA55AA, ctx.resp.data_start_address);
+    printf("New: 0x%08x\n", sunxi_efex_fel_readl(&ctx, ctx.resp.data_start_address));
 }

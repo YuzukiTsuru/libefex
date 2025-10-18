@@ -78,36 +78,36 @@ int sunxi_efex_init(struct sunxi_efex_ctx_t *ctx) {
     return 0;
 }
 
-void sunxi_efex_exec(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {
-    sunxi_send_efex_request(ctx, EFEX_CMD_EXEC, addr, 0);
+void sunxi_efex_fel_exec(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {
+    sunxi_send_efex_request(ctx, EFEX_CMD_FEL_EXEC, addr, 0);
     sunxi_read_efex_status(ctx);
 }
 
 static void sunxi_efex_write_wrapper(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr, const void *buf,
                                     const size_t len) {
-    sunxi_send_efex_request(ctx, EFEX_CMD_WRITE, addr, (uint32_t) len);
+    sunxi_send_efex_request(ctx, EFEX_CMD_FEL_WRITE, addr, (uint32_t) len);
     sunxi_usb_write(ctx, buf, len);
     sunxi_read_efex_status(ctx);
 }
 
 static void sunxi_efex_read_wrapper(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr, const void *buf,
                                    const size_t len) {
-    sunxi_send_efex_request(ctx, EFEX_CMD_READ, addr, (uint32_t) len);
+    sunxi_send_efex_request(ctx, EFEX_CMD_FEL_READ, addr, (uint32_t) len);
     sunxi_usb_read(ctx, buf, len);
     sunxi_read_efex_status(ctx);
 }
 
-uint32_t sunxi_efex_readl(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {
+uint32_t sunxi_efex_fel_readl(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {
     static uint32_t val = 0;
     sunxi_efex_read_wrapper(ctx, addr, &val, sizeof(uint32_t));
     return val;
 }
 
-void sunxi_efex_writel(const struct sunxi_efex_ctx_t *ctx, const uint32_t val, const uint32_t addr) {
+void sunxi_efex_fel_writel(const struct sunxi_efex_ctx_t *ctx, const uint32_t val, const uint32_t addr) {
     sunxi_efex_write_wrapper(ctx, addr, &val, sizeof(uint32_t));
 }
 
-void sunxi_efex_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
+void sunxi_efex_fel_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
     while (len > 0) {
         const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
         sunxi_efex_read_wrapper(ctx, addr, buf, n);
@@ -117,7 +117,7 @@ void sunxi_efex_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, c
     }
 }
 
-void sunxi_efex_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
+void sunxi_efex_fel_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len) {
     while (len > 0) {
         const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
         sunxi_efex_write_wrapper(ctx, addr, buf, n);

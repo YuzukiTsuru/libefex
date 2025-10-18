@@ -25,18 +25,18 @@ static PyObject *py_sunxi_usb_init(PyObject *self, PyObject *args);
 static PyObject *py_sunxi_efex_init(PyObject *self, PyObject *args);
 
 // Memory operation functions
-static PyObject *py_sunxi_efex_writel(PyObject *self, PyObject *args);
-static PyObject *py_sunxi_efex_readl(PyObject *self, PyObject *args);
-static PyObject *py_sunxi_efex_write_memory(PyObject *self, PyObject *args);
-static PyObject *py_sunxi_efex_read_memory(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_writel(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_readl(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_write_memory(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_read_memory(PyObject *self, PyObject *args);
 
 // Execution operation functions
-static PyObject *py_sunxi_efex_exec(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_exec(PyObject *self, PyObject *args);
 
 // Payload operation functions
-static PyObject *py_sunxi_efex_payloads_init(PyObject *self, PyObject *args);
-static PyObject *py_sunxi_efex_payloads_readl(PyObject *self, PyObject *args);
-static PyObject *py_sunxi_efex_payloads_writel(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_payloads_init(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_payloads_readl(PyObject *self, PyObject *args);
+static PyObject *py_sunxi_efex_fel_payloads_writel(PyObject *self, PyObject *args);
 
 // Get device response data
 static PyObject *py_sunxi_get_device_resp(PyObject *self, PyObject *args);
@@ -59,14 +59,14 @@ static PyMethodDef LibEfexMethods[] = {
     {"scan_usb_device", py_sunxi_scan_usb_device, METH_O, "Scan for USB devices in EFEX mode"},
     {"usb_init", py_sunxi_usb_init, METH_O, "Initialize USB connection"},
     {"efex_init", py_sunxi_efex_init, METH_O, "Initialize EFEX context"},
-    {"writel", py_sunxi_efex_writel, METH_VARARGS, "Write 32-bit value to memory"},
-    {"readl", py_sunxi_efex_readl, METH_VARARGS, "Read 32-bit value from memory"},
-    {"write_memory", py_sunxi_efex_write_memory, METH_VARARGS, "Write block of memory"},
-    {"read_memory", py_sunxi_efex_read_memory, METH_VARARGS, "Read block of memory"},
-    {"exec", py_sunxi_efex_exec, METH_VARARGS, "Execute code at address"},
-    {"payloads_init", py_sunxi_efex_payloads_init, METH_O, "Initialize payloads for architecture"},
-    {"payloads_readl", py_sunxi_efex_payloads_readl, METH_VARARGS, "Read 32-bit value using payload"},
-    {"payloads_writel", py_sunxi_efex_payloads_writel, METH_VARARGS, "Write 32-bit value using payload"},
+    {"writel", py_sunxi_efex_fel_writel, METH_VARARGS, "Write 32-bit value to memory"},
+    {"readl", py_sunxi_efex_fel_readl, METH_VARARGS, "Read 32-bit value from memory"},
+    {"write_memory", py_sunxi_efex_fel_write_memory, METH_VARARGS, "Write block of memory"},
+    {"read_memory", py_sunxi_efex_fel_read_memory, METH_VARARGS, "Read block of memory"},
+    {"exec", py_sunxi_efex_fel_exec, METH_VARARGS, "Execute code at address"},
+    {"payloads_init", py_sunxi_efex_fel_payloads_init, METH_O, "Initialize payloads for architecture"},
+    {"payloads_readl", py_sunxi_efex_fel_payloads_readl, METH_VARARGS, "Read 32-bit value using payload"},
+    {"payloads_writel", py_sunxi_efex_fel_payloads_writel, METH_VARARGS, "Write 32-bit value using payload"},
     {"get_device_resp", py_sunxi_get_device_resp, METH_O, "Get device response data"},
     {NULL, NULL, 0, NULL}
 };
@@ -134,7 +134,7 @@ static PyObject *py_sunxi_efex_init(PyObject *self, PyObject *args) {
 }
 
 // Write 32-bit value function
-static PyObject *py_sunxi_efex_writel(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_writel(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t val, addr;
     
@@ -142,12 +142,12 @@ static PyObject *py_sunxi_efex_writel(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    sunxi_efex_writel(&context->ctx, val, addr);
+    sunxi_efex_fel_writel(&context->ctx, val, addr);
     Py_RETURN_NONE;
 }
 
 // Read 32-bit value function
-static PyObject *py_sunxi_efex_readl(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_readl(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t addr;
     
@@ -155,12 +155,12 @@ static PyObject *py_sunxi_efex_readl(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    uint32_t val = sunxi_efex_readl(&context->ctx, addr);
+    uint32_t val = sunxi_efex_fel_readl(&context->ctx, addr);
     return PyLong_FromUnsignedLong(val);
 }
 
 // Write memory block function
-static PyObject *py_sunxi_efex_write_memory(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_write_memory(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t addr;
     PyObject *data_obj;
@@ -175,12 +175,12 @@ static PyObject *py_sunxi_efex_write_memory(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    sunxi_efex_write_memory(&context->ctx, addr, data, (size_t)len);
+    sunxi_efex_fel_write_memory(&context->ctx, addr, data, (size_t)len);
     Py_RETURN_NONE;
 }
 
 // Read memory block function
-static PyObject *py_sunxi_efex_read_memory(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_read_memory(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t addr;
     Py_ssize_t len;
@@ -195,7 +195,7 @@ static PyObject *py_sunxi_efex_read_memory(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    sunxi_efex_read_memory(&context->ctx, addr, buffer, (size_t)len);
+    sunxi_efex_fel_read_memory(&context->ctx, addr, buffer, (size_t)len);
     PyObject *result = PyBytes_FromStringAndSize(buffer, len);
     free(buffer);
     
@@ -203,7 +203,7 @@ static PyObject *py_sunxi_efex_read_memory(PyObject *self, PyObject *args) {
 }
 
 // Execute code function
-static PyObject *py_sunxi_efex_exec(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_exec(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t addr;
     
@@ -211,24 +211,24 @@ static PyObject *py_sunxi_efex_exec(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    sunxi_efex_exec(&context->ctx, addr);
+    sunxi_efex_fel_exec(&context->ctx, addr);
     Py_RETURN_NONE;
 }
 
 // Payload initialization function
-static PyObject *py_sunxi_efex_payloads_init(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_payloads_init(PyObject *self, PyObject *args) {
     int arch;
     
     if (!PyArg_Parse(args, "i", &arch)) {
         return NULL;
     }
     
-    sunxi_efex_payloads_init((enum sunxi_efex_payloads_arch)arch);
+    sunxi_efex_fel_payloads_init((enum sunxi_efex_fel_payloads_arch)arch);
     Py_RETURN_NONE;
 }
 
 // Payload read 32-bit value function
-static PyObject *py_sunxi_efex_payloads_readl(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_payloads_readl(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t addr;
     
@@ -236,12 +236,12 @@ static PyObject *py_sunxi_efex_payloads_readl(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    uint32_t val = sunxi_efex_payloads_readl(&context->ctx, addr);
+    uint32_t val = sunxi_efex_fel_payloads_readl(&context->ctx, addr);
     return PyLong_FromUnsignedLong(val);
 }
 
 // Payload write 32-bit value function
-static PyObject *py_sunxi_efex_payloads_writel(PyObject *self, PyObject *args) {
+static PyObject *py_sunxi_efex_fel_payloads_writel(PyObject *self, PyObject *args) {
     PyEfexContext *context;
     uint32_t val, addr;
     
@@ -249,7 +249,7 @@ static PyObject *py_sunxi_efex_payloads_writel(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    sunxi_efex_payloads_writel(&context->ctx, val, addr);
+    sunxi_efex_fel_payloads_writel(&context->ctx, val, addr);
     Py_RETURN_NONE;
 }
 
@@ -319,9 +319,9 @@ PyMODINIT_FUNC PyInit_libefex(void) {
     
     // Create architecture enum
     PyEfexArch_Enum = PyDict_New();
-    PyDict_SetItemString(PyEfexArch_Enum, "ARM32", PyLong_FromLong(PAYLOAD_ARCH_ARM32));
-    PyDict_SetItemString(PyEfexArch_Enum, "AARCH64", PyLong_FromLong(PAYLOAD_ARCH_AARCH64));
-    PyDict_SetItemString(PyEfexArch_Enum, "RISCV32_E907", PyLong_FromLong(PAYLOAD_ARCH_RISCV32_E907));
+    PyDict_SetItemString(PyEfexArch_Enum, "ARM32", PyLong_FromLong(ARCH_ARM32));
+    PyDict_SetItemString(PyEfexArch_Enum, "AARCH64", PyLong_FromLong(ARCH_AARCH64));
+    PyDict_SetItemString(PyEfexArch_Enum, "RISCV32_E907", PyLong_FromLong(ARCH_RISCV32_E907));
     PyModule_AddObject(m, "Arch", PyEfexArch_Enum);
     
     return m;
