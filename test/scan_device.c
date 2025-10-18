@@ -41,4 +41,5 @@ int main() {
 
     uint32_t storage_type = 0;
     sunxi_efex_fes_query_storage(&ctx, &storage_type);
+    printf("Storage Type: 0x%08x\n", storage_type);
 }

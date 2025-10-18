@@ -128,9 +128,7 @@ void sunxi_efex_fel_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t ad
 }
 
 int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_type) {
-    const struct sunxi_efex_request_t req = {
-            .cmd = cpu_to_le16(EFEX_CMD_FES_QUERY_STORAGE),
-            .tag = 0x0
-    };
+    sunxi_usb_fes_xfer(ctx, FES_XFER_RECV, EFEX_CMD_FES_QUERY_STORAGE, NULL, 0,
+                       (char *) storage_type, sizeof(uint32_t));
     return 0;
 }

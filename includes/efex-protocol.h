@@ -98,7 +98,7 @@ struct sunxi_efex_response_t {
 EFEX_PACKED_END
 /* clang-format on */
 
-#define EFEX_CODE_MAX_SIZE (32 * 1024)
+#define EFEX_CODE_MAX_SIZE (64 * 1024)
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
