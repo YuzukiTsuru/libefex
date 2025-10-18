@@ -88,6 +88,49 @@ int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, const s
     return 0;
 }
 
+int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
+                       const uint32_t cmd, const char *request_buf, const ssize_t request_len,
+                       const char *buf, const ssize_t len) {
+
+    struct sunxi_usb_fes_xfer_t fes_xfer = {
+            .cmd = cpu_to_le16((uint16_t)cmd),
+            .tag = 0x0,
+            .magic = SUNXI_USB_REQ_MAGIC,
+    };
+
+    if (request_len > 0 && request_len <= sizeof(fes_xfer.buf)) {
+        memcpy(fes_xfer.buf, request_buf, request_len);
+    }
+
+    int ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, (const char *) &fes_xfer, sizeof(fes_xfer));
+    if (ret != 0) {
+        fprintf(stderr, "Failed to send FES xfer header\n");
+        return ret;
+    }
+
+    if (type == FES_XFER_SEND && len > 0) {
+        ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, buf, len);
+        if (ret != 0) {
+            fprintf(stderr, "Failed to send FES xfer data\n");
+            return ret;
+        }
+    } else if (type == FES_XFER_RECV && len > 0) {
+        ret = sunxi_usb_bulk_recv(ctx->hdl, ctx->epin, (char *) buf, len);
+        if (ret != 0) {
+            fprintf(stderr, "Failed to receive FES xfer data\n");
+            return ret;
+        }
+    }
+
+    ret = sunxi_read_usb_response(ctx);
+    if (ret != 0) {
+        fprintf(stderr, "Failed to read FES xfer response\n");
+        return ret;
+    }
+
+    return 0;
+}
+
 void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type) {
 #if DEBUG_USB_TRANSFER
     if (!buf) {
@@ -98,22 +141,25 @@ void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type) {
 
     fprintf(stdout, "USB %s len=%zu\n", type ? type : "", len);
 
-    const unsigned char *p = (const unsigned char *)buf;
+    const unsigned char *p = (const unsigned char *) buf;
     for (size_t j = 0; j < len; j += 16) {
         fprintf(stdout, "%08zx: ", j);
         // hex bytes
         for (size_t i = 0; i < 16; i++) {
-            if (j + i < len) fprintf(stdout, "%02x ", p[j + i]);
-            else fprintf(stdout, "   ");
+            if (j + i < len)
+                fprintf(stdout, "%02x ", p[j + i]);
+            else
+                fprintf(stdout, "   ");
         }
         fputc(' ', stdout);
         // ASCII
         for (size_t i = 0; i < 16; i++) {
-            if (j + i >= len) fputc(' ', stdout);
-            else fputc(isprint(p[j + i]) ? p[j + i] : '.', stdout);
+            if (j + i >= len)
+                fputc(' ', stdout);
+            else
+                fputc(isprint(p[j + i]) ? p[j + i] : '.', stdout);
         }
         fputc('\n', stdout);
     }
 #endif /* DEBUG_USB_TRANSFER */
 }
-

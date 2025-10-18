@@ -38,4 +38,7 @@ int main() {
         printf("%02x ", (unsigned char)ctx.resp.reserved[i]);
     }
     printf("\n");
+
+    uint32_t storage_type = 0;
+    sunxi_efex_fes_query_storage(&ctx, &storage_type);
 }

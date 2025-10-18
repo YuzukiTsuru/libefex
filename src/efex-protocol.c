@@ -10,12 +10,12 @@
 #include "compiler.h"
 
 static int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_cmd_t type,
-                                  const uint32_t addr, const uint32_t length) {
+                                   const uint32_t addr, const uint32_t length) {
     const struct sunxi_efex_request_t req = {
-        .cmd = cpu_to_le16(type),
-        .tag = 0x0,
-        .address = cpu_to_le32(addr),
-        .len = cpu_to_le32(length)
+            .cmd = cpu_to_le16(type),
+            .tag = 0x0,
+            .address = cpu_to_le32(addr),
+            .len = cpu_to_le32(length)
     };
     return sunxi_usb_write(ctx, &req, sizeof(struct sunxi_efex_request_t));
 }
@@ -36,7 +36,7 @@ enum sunxi_verify_device_mode_t sunxi_efex_get_device_mode(const struct sunxi_ef
 
 const char *sunxi_efex_get_device_mode_str(const struct sunxi_efex_ctx_t *ctx) {
     enum sunxi_verify_device_mode_t mode = sunxi_efex_get_device_mode(ctx);
-    
+
     switch (mode) {
         case DEVICE_MODE_NULL:
             return "DEVICE_MODE_NULL";
@@ -84,14 +84,14 @@ void sunxi_efex_fel_exec(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr
 }
 
 static void sunxi_efex_write_wrapper(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr, const void *buf,
-                                    const size_t len) {
+                                     const size_t len) {
     sunxi_send_efex_request(ctx, EFEX_CMD_FEL_WRITE, addr, (uint32_t) len);
     sunxi_usb_write(ctx, buf, len);
     sunxi_read_efex_status(ctx);
 }
 
 static void sunxi_efex_read_wrapper(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr, const void *buf,
-                                   const size_t len) {
+                                    const size_t len) {
     sunxi_send_efex_request(ctx, EFEX_CMD_FEL_READ, addr, (uint32_t) len);
     sunxi_usb_read(ctx, buf, len);
     sunxi_read_efex_status(ctx);
@@ -125,4 +125,12 @@ void sunxi_efex_fel_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t ad
         buf += n;
         len -= n;
     }
+}
+
+int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_type) {
+    const struct sunxi_efex_request_t req = {
+            .cmd = cpu_to_le16(EFEX_CMD_FES_QUERY_STORAGE),
+            .tag = 0x0
+    };
+    return 0;
 }

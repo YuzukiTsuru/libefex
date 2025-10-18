@@ -1,7 +1,9 @@
 #ifndef EFEX_USB_LAYER_H
 #define EFEX_USB_LAYER_H
 
+#include <stdint.h>
 #include "libefex.h"
+#include "compiler.h"
 
 #define DEBUG_USB_TRANSFER 0
 #define DEFAULT_USB_TIMEOUT (10000)
@@ -20,6 +22,26 @@ enum sunxi_efex_usb_request_t {
     AW_USB_READ = 0x11,
     AW_USB_WRITE = 0x12,
 };
+
+enum sunxi_usb_fes_xfer_type_t {
+    FES_XFER_SEND = 0x0,
+    FES_XFER_RECV = 0x1,
+    FES_XFER_NONE = 0x2,
+};
+
+/* clang-format off */
+EFEX_PACKED_BEGIN
+struct sunxi_usb_fes_xfer_t {
+    uint16_t cmd;
+    uint16_t tag;
+    char buf[12];
+    union {
+        char magic[4];
+        uint32_t magics;
+    };
+} EFEX_PACKED;
+EFEX_PACKED_END
+/* clang-format on */
 
 /**
  * @brief Sends data over a bulk USB endpoint.
@@ -154,6 +176,27 @@ int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx);
  * @note Always call this function after you are done using the USB device to properly release resources.
  */
 int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Perform a FES (Firmware Extraction Stage) USB data transfer
+ *
+ * This function handles sending and receiving data during the FES stage of the boot process.
+ * It first sends a FES transfer header with optional request buffer data, then performs either
+ * a send or receive operation based on the specified transfer type, and finally reads the USB
+ * response to complete the transfer.
+ *
+ * @param ctx Pointer to the EFEX context structure
+ * @param type Transfer type (FES_XFER_SEND, FES_XFER_RECV, or FES_XFER_NONE)
+ * @param cmd Command to be included in the FES transfer header
+ * @param request_buf Buffer containing additional data to include in the FES transfer header
+ * @param request_len Length of the request buffer data
+ * @param buf Buffer containing data to send or to store received data
+ * @param len Length of data to transfer (can be 0 for no data transfer)
+ * @return 0 on success, negative error code on failure
+ */
+int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
+                       const uint32_t cmd, const char *request_buf, const ssize_t request_len,
+                       const char *buf, const ssize_t len);
 
 /**
  * @brief Prints USB data buffer content in hexadecimal and ASCII format

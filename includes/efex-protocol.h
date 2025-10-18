@@ -48,8 +48,8 @@ enum sunxi_verify_device_mode_t {
     DEVICE_MODE_UPDATE_HOT = 0x4,
 };
 
+/* clang-format off */
 EFEX_PACKED_BEGIN
-
 struct sunxi_usb_request_t {
     union {
         char magic[4];
@@ -62,13 +62,10 @@ struct sunxi_usb_request_t {
     uint8_t resvered2;
     uint8_t cmd_length;
     uint8_t cmd_package[16];
-}
-        EFEX_PACKED;
-
+} EFEX_PACKED;
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
-
 struct sunxi_usb_response_t {
     union {
         char magic[4];
@@ -78,35 +75,28 @@ struct sunxi_usb_response_t {
     uint32_t tag;
     uint32_t residue;
     uint8_t status;
-}
-        EFEX_PACKED;
-
+} EFEX_PACKED;
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
-
 struct sunxi_efex_request_t {
     uint16_t cmd;
     uint16_t tag;
     uint32_t address;
     uint32_t len;
     uint32_t flags;
-}
-        EFEX_PACKED;
-
+} EFEX_PACKED;
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
-
 struct sunxi_efex_response_t {
     uint16_t magic;
     uint16_t tag;
     uint8_t status;
     uint8_t reserve[3];
-}
-        EFEX_PACKED;
-
+} EFEX_PACKED;
 EFEX_PACKED_END
+/* clang-format on */
 
 #define EFEX_CODE_MAX_SIZE (32 * 1024)
 
@@ -217,5 +207,7 @@ void sunxi_efex_fel_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t add
  * @param[in] len The number of bytes to write to the memory.
  */
 void sunxi_efex_fel_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
+
+int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_type);
 
 #endif //EFEX_PROTOCOL_H
