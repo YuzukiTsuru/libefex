@@ -9,8 +9,8 @@
 #endif
 
 #include "libefex.h"
-#include "fel-protocol.h"
-#include "fel-payloads.h"
+#include "efex-protocol.h"
+#include "efex-payloads.h"
 #include "usb_layer.h"
 
 static void print_usage(void) {
@@ -74,17 +74,17 @@ static void hex_dump_region(const uint32_t base, const unsigned char *buf, const
     }
 }
 
-static enum sunxi_fel_payloads_arch parse_arch(const char *s) {
+static enum sunxi_efex_fel_payloads_arch parse_arch(const char *s) {
     if (!s)
-        return PAYLOAD_ARCH_RISCV32_E907; // default
+        return ARCH_RISCV32_E907; // default
     if (strcmp(s, "arm") == 0)
-        return PAYLOAD_ARCH_ARM32;
+        return ARCH_ARM32;
     if (strcmp(s, "aarch64") == 0)
-        return PAYLOAD_ARCH_AARCH64;
+        return ARCH_AARCH64;
     if (strcmp(s, "e907") == 0)
-        return PAYLOAD_ARCH_RISCV32_E907;
+        return ARCH_RISCV32_E907;
     fprintf(stderr, "Unknown payload arch '%s', defaulting to e907\n", s);
-    return PAYLOAD_ARCH_RISCV32_E907;
+    return ARCH_RISCV32_E907;
 }
 
 int main(const int argc, char **argv) {
@@ -94,17 +94,17 @@ int main(const int argc, char **argv) {
     }
 
     // Option parsing: look for -p <arch>
-    enum sunxi_fel_payloads_arch arch = PAYLOAD_ARCH_RISCV32_E907; // default
+    enum sunxi_efex_fel_payloads_arch arch = ARCH_RISCV32_E907; // default
     for (int i = 1; i < argc - 1; ++i) {
         if (strcmp(argv[i], "-p") == 0) {
             arch = parse_arch(argv[i + 1]);
             // Init payloads per selection
-            sunxi_fel_payloads_init(arch);
+            sunxi_efex_fel_payloads_init(arch);
         }
     }
 
     // Setup context and device
-    struct sunxi_fel_ctx_t ctx = {0};
+    struct sunxi_efex_ctx_t ctx = {0};
     if (sunxi_scan_usb_device(&ctx) <= 0) {
         fprintf(stderr, "ERROR: No matching USB device found\n");
         return 2;
@@ -114,7 +114,7 @@ int main(const int argc, char **argv) {
         sunxi_usb_exit(&ctx);
         return 3;
     }
-    if (sunxi_fel_init(&ctx) != 0) {
+    if (sunxi_efex_init(&ctx) != 0) {
         fprintf(stderr, "ERROR: FEL init failed\n");
         sunxi_usb_exit(&ctx);
         return 4;
@@ -154,7 +154,7 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             const size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
             hex_dump_region(cur, buf, n);
             cur += (uint32_t) n;
             remaining -= n;
@@ -187,7 +187,7 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             const size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
             fwrite(buf, 1, n, stdout);
             cur += (uint32_t) n;
             remaining -= n;
@@ -205,7 +205,7 @@ int main(const int argc, char **argv) {
             exit_code = 1;
             goto cleanup;
         }
-        const uint32_t val = sunxi_fel_payloads_readl(&ctx, addr);
+        const uint32_t val = sunxi_efex_fel_payloads_readl(&ctx, addr);
         printf("0x%08x\n", val);
     } else if (strcmp(cmd, "write32") == 0) {
         if (argc < 4) {
@@ -219,7 +219,7 @@ int main(const int argc, char **argv) {
             exit_code = 1;
             goto cleanup;
         }
-        sunxi_fel_payloads_writel(&ctx, value, addr);
+        sunxi_efex_fel_payloads_writel(&ctx, value, addr);
     } else if (strcmp(cmd, "read") == 0) {
         if (argc < 5) {
             print_usage();
@@ -252,7 +252,7 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
             fwrite(buf, 1, n, fp);
             cur += (uint32_t) n;
             remaining -= n;
@@ -289,7 +289,7 @@ int main(const int argc, char **argv) {
         size_t offset = 0;
         size_t nread;
         while ((nread = fread(buf, 1, chunk, fp)) > 0) {
-            sunxi_fel_write_memory(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
+            sunxi_efex_fel_write_memory(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
             offset += nread;
         }
         free(buf);
@@ -306,7 +306,7 @@ int main(const int argc, char **argv) {
             exit_code = 1;
             goto cleanup;
         }
-        sunxi_fel_exec(&ctx, addr);
+        sunxi_efex_fel_exec(&ctx, addr);
     } else {
         print_usage();
         exit_code = 1;
