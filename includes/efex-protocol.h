@@ -118,6 +118,29 @@ struct sunxi_fes_trans_t {
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
+struct sunxi_fes_verify_value_t {
+    uint32_t addr;
+    uint64_t size;
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
+struct sunxi_fes_verify_status_t {
+    uint32_t addr;
+    uint32_t size;
+    uint32_t tag;
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
+struct sunxi_fes_verify_resp_t {
+    uint32_t flag;
+    int32_t fes_crc;
+    int32_t media_crc;
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
 struct sunxi_fes_xfer_t {
     uint16_t cmd;
     uint16_t tag;

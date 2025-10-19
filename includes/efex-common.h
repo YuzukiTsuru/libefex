@@ -4,12 +4,32 @@
 #include "libefex.h"
 #include "efex-protocol.h"
 
+/**
+ * @brief Send an EFEX request to the device.
+ *
+ * This function sends a request to the EFEX device with the specified command type,
+ * address, and length parameters.
+ *
+ * @param[in] ctx Pointer to the EFEX context structure.
+ * @param[in] type Command type to send.
+ * @param[in] addr Address parameter for the command.
+ * @param[in] length Length parameter for the command.
+ *
+ * @return 0 on success, negative error code on failure.
+ */
 int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_cmd_t type,
                                    const uint32_t addr, const uint32_t length);
 
+/**
+ * @brief Read the EFEX status from the device.
+ *
+ * This function reads the current status from the EFEX device.
+ *
+ * @param[in] ctx Pointer to the EFEX context structure.
+ *
+ * @return Status value on success, negative error code on failure.
+ */
 int sunxi_read_efex_status(const struct sunxi_efex_ctx_t *ctx);
-
-
 
 /**
  * @brief Scans for a USB device matching the specified vendor and product IDs.
