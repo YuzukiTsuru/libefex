@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#include <windows.h>
 #include <efex-common.h>
 #include "efex-protocol.h"
 

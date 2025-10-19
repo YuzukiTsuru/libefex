@@ -33,7 +33,7 @@ int sunxi_efex_fes_get_chipid(const struct sunxi_efex_ctx_t *ctx, const char *ch
                               chip_id, 129);
 }
 
-int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,
+static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,
                            const enum sunxi_fes_data_type_t type, const enum sunxi_efex_cmd_t cmd) {
     int ret = 0;
     if (len <= 0) {
