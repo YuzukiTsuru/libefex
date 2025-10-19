@@ -11,7 +11,7 @@
 #include "libefex.h"
 #include "efex-protocol.h"
 #include "efex-payloads.h"
-#include "usb_layer.h"
+#include "efex-usb.h"
 
 static void print_usage(void) {
     fprintf(stderr,

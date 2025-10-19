@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "usb_layer.h"
+#include "efex-usb.h"
 #include "efex-protocol.h"
 
 int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_type) {

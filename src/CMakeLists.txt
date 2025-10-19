@@ -10,7 +10,7 @@ add_library(efex STATIC
         efex-fel.c
         efex-fes.c
         efex-payloads.c
-        usb_layer.c
+        efex-usb.c
 
         $<TARGET_OBJECTS:arch-obj>
 )

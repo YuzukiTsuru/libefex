@@ -7,7 +7,7 @@
 #include <libusb.h>
 
 #include "ending.h"
-#include "usb_layer.h"
+#include "efex-usb.h"
 #include "efex-protocol.h"
 #include "compiler.h"
 

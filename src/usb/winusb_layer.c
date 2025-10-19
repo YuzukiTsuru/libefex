@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "ending.h"
-#include "usb_layer.h"
+#include "efex-usb.h"
 #include "efex-protocol.h"
 
 #ifdef _WIN32

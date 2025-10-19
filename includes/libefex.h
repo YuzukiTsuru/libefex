@@ -2,7 +2,7 @@
 #define EFEX_LIBEFEX_H
 
 #include "compiler.h"
-#include "usb_layer.h"
+#include "efex-usb.h"
 #include "efex-common.h"
 #include "efex-fel.h"
 #include "efex-fes.h"

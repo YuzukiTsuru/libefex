@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "ending.h"
-#include "usb_layer.h"
+#include "efex-usb.h"
 #include "efex-common.h"
 #include "compiler.h"
 
