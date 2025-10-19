@@ -1,8 +1,6 @@
 #include <stdio.h>
 
 #include "libefex.h"
-#include "usb_layer.h"
-#include "efex-protocol.h"
 
 int main() {
     struct sunxi_efex_ctx_t ctx = {0};
@@ -38,8 +36,4 @@ int main() {
         printf("%02x ", (unsigned char)ctx.resp.reserved[i]);
     }
     printf("\n");
-
-    uint32_t storage_type = 0;
-    sunxi_efex_fes_query_storage(&ctx, &storage_type);
-    printf("Storage Type: 0x%08x\n", storage_type);
 }

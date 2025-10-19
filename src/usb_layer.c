@@ -7,7 +7,6 @@
 #include "ending.h"
 #include "usb_layer.h"
 #include "efex-protocol.h"
-#include "compiler.h"
 
 
 int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_usb_request_t type,
@@ -92,7 +91,12 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
                        const uint32_t cmd, const char *request_buf, const ssize_t request_len,
                        const char *buf, const ssize_t len) {
 
-    struct sunxi_usb_fes_xfer_t fes_xfer = {
+    if (ctx->resp.mode != DEVICE_MODE_SRV) {
+        fprintf(stderr, "Device is not in FES mode, cannot perform FES xfer\n");
+        return -1;
+    }
+
+    struct sunxi_fes_xfer_t fes_xfer = {
             .cmd = cpu_to_le16((uint16_t)cmd),
             .tag = 0x0,
             .magic = SUNXI_USB_REQ_MAGIC,

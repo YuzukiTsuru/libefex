@@ -1,11 +1,17 @@
 add_library(arch-obj OBJECT
         arch/riscv32_e907/efex-payloads.c
+        ../includes/efex-common.h
+        ../includes/efex-fel.h
+        ../includes/efex-fes.h
 )
 
 add_library(efex STATIC
-        efex-protocol.c
+        efex-common.c
+        efex-fel.c
+        efex-fes.c
         efex-payloads.c
         usb_layer.c
+
         $<TARGET_OBJECTS:arch-obj>
 )
 

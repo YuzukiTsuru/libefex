@@ -19,7 +19,6 @@ include(cmake/add_test_case.cmake)
 add_executable_with_libraries(efex-cli app/efex-cli.c)
 
 # tests for lib
-add_executable_with_libraries(scan_device_test test/scan_device.c)
-add_executable_with_libraries(writel_readl test/writel_readl.c)
-add_executable_with_libraries(hexdump_brom test/hexdump_brom.c)
-add_executable_with_libraries(e907_payload_io test/e907_payload_io.c)
+add_executable_with_libraries(scan_device test/scan_device.c)
+add_executable_with_libraries(fel_test test/fel_test.c)
+add_executable_with_libraries(fes_test test/fes_test.c)

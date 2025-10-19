@@ -1,9 +1,6 @@
 #include <stdio.h>
 
 #include "libefex.h"
-#include "usb_layer.h"
-#include "efex-protocol.h"
-#include "efex-payloads.h"
 
 int main() {
     struct sunxi_efex_ctx_t ctx = {0};
@@ -36,26 +33,14 @@ int main() {
 
     printf("Reserved: ");
     for (int i = 0; i < sizeof(ctx.resp.reserved); i++) {
-        printf("%02x ", (unsigned char) ctx.resp.reserved[i]);
+        printf("%02x ", (unsigned char)ctx.resp.reserved[i]);
     }
     printf("\n");
 
-    sunxi_efex_fel_payloads_init(ARCH_RISCV32_E907);
+    uint32_t data = 0;
+    sunxi_efex_fes_query_storage(&ctx, &data);
+    printf("Storage Type: 0x%08x\n", data);
 
-    uint32_t id[4];
-    id[0] = sunxi_efex_fel_payloads_readl(&ctx, 0x03006200 + 0x0);
-    id[1] = sunxi_efex_fel_payloads_readl(&ctx, 0x03006200 + 0x4);
-    id[2] = sunxi_efex_fel_payloads_readl(&ctx, 0x03006200 + 0x8);
-    id[3] = sunxi_efex_fel_payloads_readl(&ctx, 0x03006200 + 0xc);
-    printf("sid: %08x%08x%08x%08x\n", id[0], id[1], id[2], id[3]);
-
-    uint32_t reg_val = sunxi_efex_fel_payloads_readl(&ctx, 0x02001000);
-    printf("reg_val: 0x%08x\n", reg_val);
-    reg_val |= (1 << 31);
-    printf("reg_val: 0x%08x\n", reg_val);
-    sunxi_efex_fel_payloads_writel(&ctx, reg_val, 0x02001000);
-
-    sunxi_efex_fel_payloads_writel(&ctx, (0x16aa << 16) | (0x1 << 0), 0x06012000 + 0x08);
-    reg_val = sunxi_efex_fel_payloads_readl(&ctx, 0x06012000);
-    printf("reg_val: 0x%08x\n", reg_val);
+    sunxi_efex_fes_probe_flash_size(&ctx, &data);
+    printf("Flash Size: 0x%08x\n", data);
 }

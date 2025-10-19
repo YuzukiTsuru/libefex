@@ -7,7 +7,7 @@
 #include "ending.h"
 #include "usb_layer.h"
 #include "efex-payloads.h"
-#include "efex-protocol.h"
+#include "efex-fel.h"
 
 // Function to read a 32-bit value from the specified address for RISC-V32 e907
 static uint32_t payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr) {

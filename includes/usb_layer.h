@@ -2,8 +2,10 @@
 #define EFEX_USB_LAYER_H
 
 #include <stdint.h>
-#include "libefex.h"
-#include "compiler.h"
+
+#include <windows.h>
+#include <efex-common.h>
+#include "efex-protocol.h"
 
 #define DEBUG_USB_TRANSFER 0
 #define DEFAULT_USB_TIMEOUT (10000)
@@ -28,20 +30,6 @@ enum sunxi_usb_fes_xfer_type_t {
     FES_XFER_RECV = 0x1,
     FES_XFER_NONE = 0x2,
 };
-
-/* clang-format off */
-EFEX_PACKED_BEGIN
-struct sunxi_usb_fes_xfer_t {
-    uint16_t cmd;
-    uint16_t tag;
-    char buf[12];
-    union {
-        char magic[4];
-        uint32_t magics;
-    };
-} EFEX_PACKED;
-EFEX_PACKED_END
-/* clang-format on */
 
 /**
  * @brief Sends data over a bulk USB endpoint.
