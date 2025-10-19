@@ -1,6 +1,10 @@
 #ifndef EFEX_PROTOCOL_H
 #define EFEX_PROTOCOL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "compiler.h"
 
@@ -221,5 +225,10 @@ struct sunxi_efex_ctx_t {
     int epin;
     struct sunxi_efex_device_resp_t resp;
 };
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //EFEX_PROTOCOL_H

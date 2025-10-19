@@ -1,6 +1,10 @@
 #ifndef EFEX_USB_LAYER_H
 #define EFEX_USB_LAYER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #include <efex-common.h>
@@ -206,5 +210,10 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
  * @see sunxi_usb_bulk_recv()
  */
 void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //EFEX_USB_LAYER_H

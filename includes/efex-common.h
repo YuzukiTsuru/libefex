@@ -1,6 +1,10 @@
 #ifndef LIBEFEX_EFEX_COMMON_H
 #define LIBEFEX_EFEX_COMMON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "libefex.h"
 #include "efex-protocol.h"
 
@@ -90,5 +94,10 @@ int sunxi_efex_init(struct sunxi_efex_ctx_t *ctx);
  * @return A null-terminated string describing the error.
  */
 const char *sunxi_efex_strerror(int error_code);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //LIBEFEX_EFEX_COMMON_H

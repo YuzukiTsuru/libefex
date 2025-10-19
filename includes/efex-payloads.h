@@ -1,6 +1,10 @@
 #ifndef EFEX_PAYLOADS_H
 #define EFEX_PAYLOADS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "libefex.h"
 #include "compiler.h"
@@ -125,5 +129,10 @@ int sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t a
  * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure
  */
 int sunxi_efex_fel_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //EFEX_PAYLOADS_H

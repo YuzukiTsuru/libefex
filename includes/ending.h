@@ -1,6 +1,10 @@
 #ifndef EFEX_ENDING_H
 #define EFEX_ENDING_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64))
@@ -70,6 +74,11 @@
 #define be32_to_cpu(x)	(SWAB32((uint32_t)(x)))
 #define cpu_to_be16(x)	(SWAB16((uint16_t)(x)))
 #define be16_to_cpu(x)	(SWAB16((uint16_t)(x)))
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif //EFEX_ENDING_H

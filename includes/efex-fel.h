@@ -1,6 +1,10 @@
 #ifndef LIBEFEX_EFEX_FEL_H
 #define LIBEFEX_EFEX_FEL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "efex-protocol.h"
 
 /**
@@ -61,5 +65,10 @@ int sunxi_efex_fel_read_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr
  * @param[in] len The number of bytes to write to the memory.
  */
 int sunxi_efex_fel_write_memory(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //LIBEFEX_EFEX_FEL_H

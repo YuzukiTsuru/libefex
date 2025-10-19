@@ -1,6 +1,10 @@
 #ifndef LIBEFEX_EFEX_FES_H
 #define LIBEFEX_EFEX_FES_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "efex-common.h"
 
 /**
@@ -145,5 +149,10 @@ int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, uint32_t
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_tool_mode(const struct sunxi_efex_ctx_t *ctx, uint32_t tool_mode, uint32_t next_mode);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //LIBEFEX_EFEX_FES_H

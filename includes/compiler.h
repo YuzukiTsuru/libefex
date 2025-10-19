@@ -1,6 +1,10 @@
 #ifndef EFEX_COMPILER_H
 #define EFEX_COMPILER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define cross-platform packing macros to address MSVC's lack of support for __attribute__((packed))
 #ifdef _MSC_VER
 #include <sys/types.h>
@@ -19,6 +23,11 @@
 #define EFEX_PACKED_BEGIN
 #define EFEX_PACKED_END
 #define EFEX_PACKED __attribute__((packed))
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif // EFEX_COMPILER_H
