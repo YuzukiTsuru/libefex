@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "libefex.h"
 #include "compiler.h"
+#include "efex-common.h"
 
 enum sunxi_efex_fel_payloads_arch {
     ARCH_ARM32,
@@ -84,8 +85,9 @@ struct payloads_ops {
  *
  * @param arch The architecture type to initialize payloads for.
  *             This can be an enum value representing a specific architecture (e.g., ARM, RISC-V).
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure
  */
-void sunxi_efex_fel_payloads_init(enum sunxi_efex_fel_payloads_arch arch);
+int sunxi_efex_fel_payloads_init(enum sunxi_efex_fel_payloads_arch arch);
 
 /**
  * @brief Retrieves the current payload operations.
@@ -105,10 +107,11 @@ struct payloads_ops *sunxi_efex_fel_get_current_payload();
  *
  * @param ctx The context structure that holds the necessary information for the operation.
  * @param addr The address from which to read the 32-bit value.
+ * @param val Placeholder for output parameter to store the read value.
  *
- * @return The 32-bit value read from the specified address.
+ * @return The 32-bit value read from the specified address on success, or a negative error code from enum sunxi_efex_error_t on failure
  */
-uint32_t sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
+int sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, uint32_t *val);
 
 /**
  * @brief Writes a 32-bit value to the specified address.
@@ -119,7 +122,8 @@ uint32_t sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint3
  * @param ctx The context structure that holds the necessary information for the operation.
  * @param value The 32-bit value to write to memory.
  * @param addr The address to which the value will be written.
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure
  */
-void sunxi_efex_fel_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
+int sunxi_efex_fel_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
 
 #endif //EFEX_PAYLOADS_H

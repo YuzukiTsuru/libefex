@@ -40,7 +40,7 @@ enum sunxi_usb_fes_xfer_type_t {
  * @param ep The endpoint address to send the data to. Should be a valid bulk endpoint.
  * @param buf A pointer to the buffer containing the data to be sent.
  * @param len The length of the data to be sent, in bytes.
- * @return 0 on success, or a negative error code on failure.
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  *
  * @note The function uses usb to perform the bulk transfer.
  */
@@ -56,7 +56,7 @@ int sunxi_usb_bulk_send(void *handle, int ep, const char *buf, ssize_t len);
  * @param ep The endpoint address to receive data from. Should be a valid bulk endpoint.
  * @param buf A pointer to the buffer where received data will be stored.
  * @param len The maximum number of bytes to receive.
- * @return The number of bytes actually received on success, or a negative error code on failure.
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  *
  * @note The function uses usb to perform the bulk transfer.
  */
@@ -114,7 +114,7 @@ int sunxi_usb_write(const struct sunxi_efex_ctx_t *ctx, const void *buf, size_t 
  * @param ctx A pointer to the sunxi_fel_ctx_t structure that contains the device context.
  * @param data A pointer to the buffer where the data will be stored.
  * @param len The maximum number of bytes to read.
- * @return The number of bytes read on success, or a negative error code on failure.
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  *
  * @note This function uses libusb_bulk_transfer to perform the read operation.
  */
@@ -129,8 +129,8 @@ int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, size_t 
  * and stores the handle in the provided context.
  *
  * @param ctx A pointer to the sunxi_fel_ctx_t structure, which will hold the device handle if found.
- * @return 0 on success, or -1 if an error occurred (e.g., unable to retrieve device descriptor or
- *         open a connection to the device).
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
+ *         Returns EFEX_ERR_USB_DEVICE_NOT_FOUND if the device is not found.
  *
  * @note This function uses the libusb library for USB device enumeration and connection.
  */
@@ -179,7 +179,7 @@ int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx);
  * @param request_len Length of the request buffer data
  * @param buf Buffer containing data to send or to store received data
  * @param len Length of data to transfer (can be 0 for no data transfer)
- * @return 0 on success, negative error code on failure
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
                        const uint32_t cmd, const char *request_buf, const ssize_t request_len,

@@ -6,6 +6,7 @@
 #include "ending.h"
 #include "efex-usb.h"
 #include "efex-protocol.h"
+#include "efex-common.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -31,6 +32,10 @@ static int match_vid_pid(const char *device_path) {
 }
 
 int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
+    if (!handle || !buf || len <= 0) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     HANDLE const usb_handle = (HANDLE) handle;
     const size_t max_chunk = 128 * 1024;
     DWORD bytes_sent = 0;
@@ -45,23 +50,21 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
         BOOL const result = DeviceIoControl(usb_handle, dwIoControlCode,NULL, (DWORD) 0,
                                             (LPVOID) buf, chunk, &bytes_sent, NULL);
 
-        if (!result) {
-            fprintf(stderr, "USB bulk send failed with error code %lu\n", GetLastError());
-            return -1;
-        }
-
-        if (bytes_sent == 0) {
-            fprintf(stderr, "USB bulk sent 0 data.\n");
-            return -1;
+        if (!result || bytes_sent == 0) {
+            return EFEX_ERR_USB_TRANSFER;
         }
 
         len -= bytes_sent;
         buf += bytes_sent;
     }
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len) {
+    if (!handle || !buf || len <= 0) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     HANDLE const usb_handle = (HANDLE) handle;
     DWORD bytes_received = 0;
 
@@ -70,22 +73,20 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
     const BOOL result = DeviceIoControl(usb_handle, dwIoControlCode, NULL, 0,
                                         (LPVOID) buf, (DWORD) len, &bytes_received, NULL);
 
-    if (!result) {
-        fprintf(stderr, "USB bulk receive failed with error code %lu\n", GetLastError());
-        return -1;
-    }
-
-    if (bytes_received == 0) {
-        fprintf(stderr, "USB bulk received 0 data.\n");
-        return -1;
+    if (!result || bytes_received == 0) {
+        return EFEX_ERR_USB_TRANSFER;
     }
 
     sunxi_usb_hex_dump(buf, (size_t) bytes_received, "RECV");
 
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
+    if (!ctx) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     SP_DEVICE_INTERFACE_DATA interface_data;
     ULONG index = 0;
     BOOL device_found = FALSE;
@@ -96,7 +97,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
                                                          DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 
     if (device_info_set == INVALID_HANDLE_VALUE) {
-        return -1;
+        return EFEX_ERR_USB_INIT;
     }
 
     BOOL result = TRUE;
@@ -120,7 +121,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
                     malloc(required_size);
             if (detail_data == NULL) {
                 SetupDiDestroyDeviceInfoList(device_info_set);
-                return -1;
+                return EFEX_ERR_MEMORY;
             }
             detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
@@ -134,10 +135,9 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
                         free(detail_data);
                         break;
                     }
-                    fprintf(stderr, "ERROR: Failed to allocate memory for device name\n");
                     free(detail_data);
                     SetupDiDestroyDeviceInfoList(device_info_set);
-                    return -1;
+                    return EFEX_ERR_MEMORY;
                 }
             }
             free(detail_data);
@@ -147,41 +147,41 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 
     SetupDiDestroyDeviceInfoList(device_info_set);
 
-    return device_found;
+    return device_found ? EFEX_ERR_SUCCESS : EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
 int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
     if (!ctx || !ctx->dev_name) {
-        fprintf(stderr, "ERROR: Invalid context or device name\n");
-        return -1;
+        return EFEX_ERR_NULL_PTR;
     }
 
     ctx->hdl = CreateFile(ctx->dev_name, GENERIC_WRITE | GENERIC_READ,
                           FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
     if (ctx->hdl == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "ERROR: Can't open USB device\n");
-        return -1;
+        return EFEX_ERR_USB_OPEN;
     }
 
-    return 1;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
-    if (ctx) {
-        /* Release device handle */
-        if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {
-            CloseHandle((HANDLE) ctx->hdl);
-            ctx->hdl = NULL;
-        }
-        /* Free device name memory */
-        if (ctx->dev_name != NULL) {
-            free(ctx->dev_name);
-            ctx->dev_name = NULL;
-        }
-        return 0;
+    if (!ctx) {
+        return EFEX_ERR_NULL_PTR;
     }
-    return -1;
+
+    /* Release device handle */
+    if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {
+        CloseHandle((HANDLE) ctx->hdl);
+        ctx->hdl = NULL;
+    }
+    /* Free device name memory */
+    if (ctx->dev_name != NULL) {
+        free(ctx->dev_name);
+        ctx->dev_name = NULL;
+    }
+
+    return EFEX_ERR_SUCCESS;
 }
 
 #endif // _WIN32

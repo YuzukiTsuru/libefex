@@ -1,25 +1,27 @@
 #include <stdio.h>
 
 #include "libefex.h"
+#include "efex-common.h"
 
 int main() {
     struct sunxi_efex_ctx_t ctx = {0};
-    int ret = 0;
+    int ret = EFEX_ERR_SUCCESS;
 
     ret = sunxi_scan_usb_device(&ctx);
-    if (ret <= 0) {
-        fprintf(stderr, "ERROR: Can't get vaild EFEX device\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        return ret;
     }
     ret = sunxi_usb_init(&ctx);
-    if (ret <= 0) {
-        fprintf(stderr, "ERROR: EFEX device USB init failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        return ret;
     }
     ret = sunxi_efex_init(&ctx);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX device init failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
 
     printf("Found EFEX device\n");
@@ -36,4 +38,7 @@ int main() {
         printf("%02x ", (unsigned char)ctx.resp.reserved[i]);
     }
     printf("\n");
+    
+    sunxi_usb_exit(&ctx);
+    return 0;
 }

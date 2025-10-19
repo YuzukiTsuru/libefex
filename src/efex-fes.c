@@ -41,10 +41,13 @@ int sunxi_efex_fes_get_chipid(const struct sunxi_efex_ctx_t *ctx, const char *ch
 static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len,
                                   const uint32_t addr, const enum sunxi_fes_data_type_t type,
                                   const enum sunxi_efex_cmd_t cmd) {
-    int ret = 0;
+    if (!ctx || !buf) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
+    int ret = EFEX_ERR_SUCCESS;
     if (len <= 0) {
-        fprintf(stderr, "Invalid length for FES download: %zd\n", len);
-        return -1;
+        return EFEX_ERR_INVALID_PARAM;
     }
 
     uint32_t remain_data = (uint32_t) len;
@@ -83,13 +86,12 @@ static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char
         buff_ptr += length;
 
         // Check for errors
-        if (ret < 0) {
-            fprintf(stderr, "Error while downloading FES data\n");
-            return -1;
+        if (ret != EFEX_ERR_SUCCESS) {
+            return ret;
         }
     }
 
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,

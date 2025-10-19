@@ -9,9 +9,14 @@
 #include "ending.h"
 #include "efex-usb.h"
 #include "efex-protocol.h"
+#include "efex-common.h"
 #include "compiler.h"
 
 int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
+    if (!handle || !buf || len <= 0) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     libusb_device_handle *hdl = (libusb_device_handle *) handle;
     const size_t max_chunk = 128 * 1024;
     int bytes;
@@ -23,35 +28,41 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 
         const int r = libusb_bulk_transfer(hdl, ep, (void *) buf, (int) chunk, &bytes, DEFAULT_USB_TIMEOUT);
         if (r != 0) {
-            fprintf(stderr, "USB bulk send failed with error code %d reason %s\n", r, libusb_error_name(r));
-            return -1;
+            return EFEX_ERR_USB_TRANSFER;
         }
         len -= bytes;
         buf += bytes;
     }
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, ssize_t len) {
+    if (!handle || !buf || len <= 0) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     libusb_device_handle *hdl = (libusb_device_handle *) handle;
     int bytes;
 
     while (len > 0) {
-        const int r = libusb_bulk_transfer(hdl, ep, (uint8_t *)buf, (int) len, &bytes, DEFAULT_USB_TIMEOUT);
+        const int r = libusb_bulk_transfer(hdl, ep, (uint8_t *) buf, (int) len, &bytes, DEFAULT_USB_TIMEOUT);
         if (r != 0) {
-            fprintf(stderr, "USB bulk receive failed with error code %d reason %s\n", r, libusb_error_name(r));
-            return -1;
+            return EFEX_ERR_USB_TRANSFER;
         }
 
-        sunxi_usb_hex_dump(buf, (size_t)bytes, "RECV");
+        sunxi_usb_hex_dump(buf, (size_t) bytes, "RECV");
 
         len -= bytes;
         buf += bytes;
     }
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
+    if (!ctx) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
     libusb_device **list = NULL;
     libusb_context *context = NULL;
     int device_found = 0;
@@ -62,22 +73,20 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
         libusb_device *device = list[i];
         struct libusb_device_descriptor desc;
         if (libusb_get_device_descriptor(device, &desc) != 0) {
-            fprintf(stderr, "ERROR: Can't get device list\r\n");
-            return -1;
+            return EFEX_ERR_USB_DEVICE_NOT_FOUND;
         }
         if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
             // Cast to correct type for libusb_open
             libusb_device_handle *libusb_hdl = NULL;
             if (libusb_open(device, &libusb_hdl) != 0) {
                 fprintf(stderr, "ERROR: Can't connect to device\r\n");
-                return -1;
+                return EFEX_ERR_USB_INIT;
             }
             ctx->hdl = libusb_hdl; // Assign to void* after successful open
-            device_found = 1;
-            break;
+            return EFEX_ERR_SUCCESS;
         }
     }
-    return device_found;
+    return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
 
@@ -107,19 +116,29 @@ int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
                     }
                 }
                 libusb_free_config_descriptor(config);
-                return 1;
+                return EFEX_ERR_SUCCESS;
             }
         }
     }
-    return -1;
+    return EFEX_ERR_USB_INIT;
 }
 
 int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
-    if (ctx && ctx->hdl) {
-        libusb_device_handle *libusb_hdl = (libusb_device_handle *)ctx->hdl;
+    if (!ctx) {
+        return EFEX_ERR_NULL_PTR;
+    }
+
+    if (ctx->hdl) {
+        libusb_device_handle *libusb_hdl = (libusb_device_handle *) ctx->hdl;
+        libusb_release_interface(libusb_hdl, 0);
         libusb_close(libusb_hdl);
         ctx->hdl = NULL;
-        return 0;
     }
-    return -1;
+
+    if (ctx->usb_context) {
+        libusb_exit((libusb_context *) ctx->usb_context);
+        ctx->usb_context = NULL;
+    }
+
+    return EFEX_ERR_SUCCESS;
 }

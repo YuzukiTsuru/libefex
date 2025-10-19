@@ -15,10 +15,10 @@
  * @param[in] addr Address parameter for the command.
  * @param[in] length Length parameter for the command.
  *
- * @return 0 on success, negative error code on failure.
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
-int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_cmd_t type,
-                                   const uint32_t addr, const uint32_t length);
+int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_cmd_t type,
+                            uint32_t addr, uint32_t length);
 
 /**
  * @brief Read the EFEX status from the device.
@@ -27,7 +27,7 @@ int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi
  *
  * @param[in] ctx Pointer to the EFEX context structure.
  *
- * @return Status value on success, negative error code on failure.
+ * @return Status value on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_read_efex_status(const struct sunxi_efex_ctx_t *ctx);
 
@@ -40,8 +40,7 @@ int sunxi_read_efex_status(const struct sunxi_efex_ctx_t *ctx);
  * and stores the handle in the provided context.
  *
  * @param ctx A pointer to the sunxi_efex_ctx_t structure, which will hold the device handle if found.
- * @return 0 on success, or -1 if an error occurred (e.g., unable to retrieve device descriptor or
- *         open a connection to the device).
+ * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  *
  * @note This function uses the libusb library for USB device enumeration and connection.
  */
@@ -77,8 +76,19 @@ const char *sunxi_efex_get_device_mode_str(const struct sunxi_efex_ctx_t *ctx);
  *
  * @param[in] ctx Pointer to the context structure.
  *
- * @return Returns 0 on success, or a negative error code on failure.
+ * @return Returns EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_efex_init(struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Get error message string for a given error code.
+ *
+ * This function returns a human-readable string description for the specified error code.
+ *
+ * @param[in] error_code The error code to get the description for.
+ *
+ * @return A null-terminated string describing the error.
+ */
+const char *sunxi_efex_strerror(int error_code);
 
 #endif //LIBEFEX_EFEX_COMMON_H

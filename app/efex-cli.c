@@ -12,6 +12,7 @@
 #include "efex-protocol.h"
 #include "efex-payloads.h"
 #include "efex-usb.h"
+#include "efex-common.h"
 
 static void print_usage(void) {
     fprintf(stderr,
@@ -29,27 +30,27 @@ static void print_usage(void) {
 }
 
 static int parse_u32(const char *s, uint32_t *out) {
-    if (!s)
-        return -1;
+    if (!s || !out)
+        return EFEX_ERR_INVALID_PARAM;
     errno = 0;
     const unsigned long long v = strtoull(s, NULL, 0); // auto-detect base (0x for hex)
     if (errno != 0)
-        return -1;
+        return EFEX_ERR_INVALID_PARAM;
     if (v > 0xFFFFFFFFULL)
-        return -1;
+        return EFEX_ERR_INVALID_PARAM;
     *out = (uint32_t) v;
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 static int parse_size(const char *s, size_t *out) {
-    if (!s)
-        return -1;
+    if (!s || !out)
+        return EFEX_ERR_INVALID_PARAM;
     errno = 0;
     const unsigned long long v = strtoull(s, NULL, 0);
     if (errno != 0)
-        return -1;
+        return EFEX_ERR_INVALID_PARAM;
     *out = (size_t) v;
-    return 0;
+    return EFEX_ERR_SUCCESS;
 }
 
 static void hex_dump_region(const uint32_t base, const unsigned char *buf, const size_t len) {
@@ -99,23 +100,34 @@ int main(const int argc, char **argv) {
         if (strcmp(argv[i], "-p") == 0) {
             arch = parse_arch(argv[i + 1]);
             // Init payloads per selection
-            sunxi_efex_fel_payloads_init(arch);
+            int ret = sunxi_efex_fel_payloads_init(arch);
+            if (ret != EFEX_ERR_SUCCESS) {
+                fprintf(stderr, "ERROR: Failed to initialize payloads: %s\n", sunxi_efex_strerror(ret));
+                return 1;
+            }
         }
     }
 
     // Setup context and device
     struct sunxi_efex_ctx_t ctx = {0};
-    if (sunxi_scan_usb_device(&ctx) <= 0) {
-        fprintf(stderr, "ERROR: No matching USB device found\n");
+    int ret = EFEX_ERR_SUCCESS;
+    
+    ret = sunxi_scan_usb_device(&ctx);
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
         return 2;
     }
-    if (sunxi_usb_init(&ctx) <= 0) {
-        fprintf(stderr, "ERROR: Failed to initialize USB device\n");
+    
+    ret = sunxi_usb_init(&ctx);
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
         sunxi_usb_exit(&ctx);
         return 3;
     }
-    if (sunxi_efex_init(&ctx) != 0) {
-        fprintf(stderr, "ERROR: FEL init failed\n");
+    
+    ret = sunxi_efex_init(&ctx);
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
         sunxi_usb_exit(&ctx);
         return 4;
     }
@@ -138,15 +150,22 @@ int main(const int argc, char **argv) {
         }
         uint32_t addr = 0;
         size_t length = 0;
-        if (parse_u32(argv[2], &addr) != 0 || parse_size(argv[3], &length) != 0) {
-            fprintf(stderr, "Invalid address/length\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
+            exit_code = 1;
+            goto cleanup;
+        }
+        parse_ret = parse_size(argv[3], &length);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid length: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
         const size_t chunk = 4096;
         unsigned char *buf = (unsigned char *) malloc(chunk);
         if (!buf) {
-            fprintf(stderr, "Out of memory\n");
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             exit_code = 1;
             goto cleanup;
         }
@@ -154,7 +173,13 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             const size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            ret = sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            if (ret != EFEX_ERR_SUCCESS) {
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+                free(buf);
+                exit_code = 5;
+                goto cleanup;
+            }
             hex_dump_region(cur, buf, n);
             cur += (uint32_t) n;
             remaining -= n;
@@ -168,8 +193,15 @@ int main(const int argc, char **argv) {
         }
         uint32_t addr = 0;
         size_t length = 0;
-        if (parse_u32(argv[2], &addr) != 0 || parse_size(argv[3], &length) != 0) {
-            fprintf(stderr, "Invalid address/length\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
+            exit_code = 1;
+            goto cleanup;
+        }
+        parse_ret = parse_size(argv[3], &length);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid length: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
@@ -179,7 +211,7 @@ int main(const int argc, char **argv) {
         const size_t chunk = 65536;
         unsigned char *buf = (unsigned char *) malloc(chunk);
         if (!buf) {
-            fprintf(stderr, "Out of memory\n");
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             exit_code = 1;
             goto cleanup;
         }
@@ -187,7 +219,13 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             const size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            ret = sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            if (ret != EFEX_ERR_SUCCESS) {
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+                free(buf);
+                exit_code = 5;
+                goto cleanup;
+            }
             fwrite(buf, 1, n, stdout);
             cur += (uint32_t) n;
             remaining -= n;
@@ -200,12 +238,19 @@ int main(const int argc, char **argv) {
             goto cleanup;
         }
         uint32_t addr = 0;
-        if (parse_u32(argv[2], &addr) != 0) {
-            fprintf(stderr, "Invalid address\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
-        const uint32_t val = sunxi_efex_fel_payloads_readl(&ctx, addr);
+        uint32_t val;
+        ret = sunxi_efex_fel_payloads_readl(&ctx, addr, &val);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            exit_code = 5;
+            goto cleanup;
+        }
         printf("0x%08x\n", val);
     } else if (strcmp(cmd, "write32") == 0) {
         if (argc < 4) {
@@ -214,12 +259,24 @@ int main(const int argc, char **argv) {
             goto cleanup;
         }
         uint32_t addr = 0, value = 0;
-        if (parse_u32(argv[2], &addr) != 0 || parse_u32(argv[3], &value) != 0) {
-            fprintf(stderr, "Invalid address/value\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
-        sunxi_efex_fel_payloads_writel(&ctx, value, addr);
+        parse_ret = parse_u32(argv[3], &value);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid value: %s\n", sunxi_efex_strerror(parse_ret));
+            exit_code = 1;
+            goto cleanup;
+        }
+        ret = sunxi_efex_fel_payloads_writel(&ctx, value, addr);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            exit_code = 5;
+            goto cleanup;
+        }
     } else if (strcmp(cmd, "read") == 0) {
         if (argc < 5) {
             print_usage();
@@ -228,22 +285,29 @@ int main(const int argc, char **argv) {
         }
         uint32_t addr = 0;
         size_t length = 0;
-        if (parse_u32(argv[2], &addr) != 0 || parse_size(argv[3], &length) != 0) {
-            fprintf(stderr, "Invalid address/length\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
+            exit_code = 1;
+            goto cleanup;
+        }
+        parse_ret = parse_size(argv[3], &length);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid length: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
         const char *file = argv[4];
         FILE *fp = fopen(file, "wb");
         if (!fp) {
-            fprintf(stderr, "Failed to open file '%s'\n", file);
+            fprintf(stderr, "ERROR: %s: '%s'\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), file);
             exit_code = 1;
             goto cleanup;
         }
         const size_t chunk = 65536;
         unsigned char *buf = (unsigned char *) malloc(chunk);
         if (!buf) {
-            fprintf(stderr, "Out of memory\n");
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             fclose(fp);
             exit_code = 1;
             goto cleanup;
@@ -252,7 +316,14 @@ int main(const int argc, char **argv) {
         uint32_t cur = addr;
         while (remaining > 0) {
             size_t n = remaining < chunk ? remaining : chunk;
-            sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            ret = sunxi_efex_fel_read_memory(&ctx, cur, (const char *) buf, (ssize_t) n);
+            if (ret != EFEX_ERR_SUCCESS) {
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+                free(buf);
+                fclose(fp);
+                exit_code = 5;
+                goto cleanup;
+            }
             fwrite(buf, 1, n, fp);
             cur += (uint32_t) n;
             remaining -= n;
@@ -267,21 +338,22 @@ int main(const int argc, char **argv) {
         }
         uint32_t addr = 0;
         const char *file = argv[3];
-        if (parse_u32(argv[2], &addr) != 0) {
-            fprintf(stderr, "Invalid address\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
         FILE *fp = fopen(file, "rb");
         if (!fp) {
-            fprintf(stderr, "Failed to open file '%s'\n", file);
+            fprintf(stderr, "ERROR: %s: '%s'\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), file);
             exit_code = 1;
             goto cleanup;
         }
         const size_t chunk = 65536;
         unsigned char *buf = (unsigned char *) malloc(chunk);
         if (!buf) {
-            fprintf(stderr, "Out of memory\n");
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             fclose(fp);
             exit_code = 1;
             goto cleanup;
@@ -289,7 +361,14 @@ int main(const int argc, char **argv) {
         size_t offset = 0;
         size_t nread;
         while ((nread = fread(buf, 1, chunk, fp)) > 0) {
-            sunxi_efex_fel_write_memory(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
+            ret = sunxi_efex_fel_write_memory(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
+            if (ret != EFEX_ERR_SUCCESS) {
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+                free(buf);
+                fclose(fp);
+                exit_code = 5;
+                goto cleanup;
+            }
             offset += nread;
         }
         free(buf);
@@ -301,12 +380,18 @@ int main(const int argc, char **argv) {
             goto cleanup;
         }
         uint32_t addr = 0;
-        if (parse_u32(argv[2], &addr) != 0) {
-            fprintf(stderr, "Invalid address\n");
+        int parse_ret = parse_u32(argv[2], &addr);
+        if (parse_ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
             exit_code = 1;
             goto cleanup;
         }
-        sunxi_efex_fel_exec(&ctx, addr);
+        ret = sunxi_efex_fel_exec(&ctx, addr);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            exit_code = 5;
+            goto cleanup;
+        }
     } else {
         print_usage();
         exit_code = 1;

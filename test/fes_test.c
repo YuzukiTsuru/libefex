@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "efex-common.h"
 #if defined(_WIN32)
 #include <windows.h>
 #define sleep(x) Sleep(x * 1000)
@@ -110,8 +111,8 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
     if (fex_file) {
         FILE *fp = fopen(fex_file, "rb");
         if (!fp) {
-            fprintf(stderr, "ERROR: Cannot open file %s for reading\r\n", fex_file);
-            return -1;
+            fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), fex_file);
+            return EFEX_ERR_FILE_OPEN;
         }
 
         // Get file size
@@ -120,17 +121,17 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
         fseek(fp, 0, SEEK_SET);
 
         if (file_size <= 0) {
-            fprintf(stderr, "ERROR: File %s is empty\r\n", fex_file);
+            fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_SIZE), fex_file);
             fclose(fp);
-            return -1;
+            return EFEX_ERR_FILE_SIZE;
         }
 
         // Allocate buffer for file content
         char *buffer = malloc(file_size);
         if (!buffer) {
-            fprintf(stderr, "ERROR: Memory allocation failed\r\n");
+            fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             fclose(fp);
-            return -1;
+            return EFEX_ERR_MEMORY;
         }
 
         // Read file content
@@ -138,17 +139,27 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
         fclose(fp);
 
         if (bytes_read != (size_t) file_size) {
-            fprintf(stderr, "ERROR: Failed to read entire file\r\n");
+            fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_READ));
             free(buffer);
-            return -1;
+            return EFEX_ERR_FILE_READ;
         }
 
         const struct boot_file_head_t *fex_head = (const struct boot_file_head_t *) buffer;
         const uint32_t run_addr = fex_head->ret_addr;
 
         printf("Downloading %ld bytes from %s to device...\n", file_size, fex_file);
-        sunxi_efex_fel_write_memory(ctx, run_addr, buffer, file_size);
-        sunxi_efex_fel_exec(ctx, run_addr);
+      ret = sunxi_efex_fel_write_memory(ctx, run_addr, buffer, file_size);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            free(buffer);
+            return ret;
+        }
+        ret = sunxi_efex_fel_exec(ctx, run_addr);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            free(buffer);
+            return ret;
+        }
         free(buffer);
 
         printf("FEX file download completed successfully\n");
@@ -158,8 +169,8 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
     if (uboot_file) {
         FILE *fp = fopen(uboot_file, "rb");
         if (!fp) {
-            fprintf(stderr, "ERROR: Cannot open file %s for reading\r\n", uboot_file);
-            return -1;
+            fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), uboot_file);
+            return EFEX_ERR_FILE_OPEN;
         }
 
         // Get file size
@@ -168,17 +179,17 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
         fseek(fp, 0, SEEK_SET);
 
         if (file_size <= 0) {
-            fprintf(stderr, "ERROR: File %s is empty\r\n", uboot_file);
+            fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_SIZE), uboot_file);
             fclose(fp);
-            return -1;
+            return EFEX_ERR_FILE_SIZE;
         }
 
         // Allocate buffer for file content
         char *buffer = malloc(file_size);
         if (!buffer) {
-            fprintf(stderr, "ERROR: Memory allocation failed\r\n");
+            fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
             fclose(fp);
-            return -1;
+            return EFEX_ERR_MEMORY;
         }
 
         // Read file content
@@ -186,9 +197,9 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
         fclose(fp);
 
         if (bytes_read != (size_t) file_size) {
-            fprintf(stderr, "ERROR: Failed to read entire file\r\n");
+            fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_READ));
             free(buffer);
-            return -1;
+            return EFEX_ERR_FILE_READ;
         }
 
         struct uboot_head_t *uboot_head = (struct uboot_head_t *) buffer;
@@ -196,8 +207,20 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
 
         printf("Downloading %ld bytes from %s to device...\n", file_size, uboot_file);
 
-        sunxi_efex_fel_write_memory(ctx, uboot_head->uboot_head.run_addr, buffer, file_size);
-        sunxi_efex_fel_exec(ctx, uboot_head->uboot_head.run_addr);
+        ret = sunxi_efex_fel_write_memory(ctx, uboot_head->uboot_head.run_addr, buffer, file_size);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            free(buffer);
+            sunxi_usb_exit(ctx);
+            return ret;
+        }
+        ret = sunxi_efex_fel_exec(ctx, uboot_head->uboot_head.run_addr);
+        if (ret != EFEX_ERR_SUCCESS) {
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
+            free(buffer);
+            sunxi_usb_exit(ctx);
+            return ret;
+        }
         free(buffer);
 
         printf("U-Boot file download completed successfully\n");
@@ -209,7 +232,7 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
 
     while (1) {
         ret = sunxi_scan_usb_device(ctx);
-        if (ret > 0) {
+        if (ret == EFEX_ERR_SUCCESS) {
             break;
         }
         sleep(1);
@@ -217,11 +240,28 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
 
     while (1) {
         printf("Device reconnected, try init in fes mode\n");
-        sunxi_usb_init(ctx);
-        sunxi_efex_init(ctx);
+        ret = sunxi_usb_init(ctx);
+        if (ret != EFEX_ERR_SUCCESS) {
+            printf("USB init failed: %s\n", sunxi_efex_strerror(ret));
+            sleep(3);
+            sunxi_usb_exit(ctx);
+            sunxi_scan_usb_device(ctx);
+            continue;
+        }
+
+        ret = sunxi_efex_init(ctx);
+        if (ret != EFEX_ERR_SUCCESS) {
+            printf("EFEX init failed: %s\n", sunxi_efex_strerror(ret));
+            sleep(3);
+            sunxi_usb_exit(ctx);
+            sunxi_scan_usb_device(ctx);
+            continue;
+        }
+
         if (ctx->resp.mode == DEVICE_MODE_SRV) {
             break;
         }
+
         sleep(3);
         sunxi_usb_exit(ctx);
         sunxi_scan_usb_device(ctx);
@@ -248,39 +288,41 @@ int main(const int argc, char *argv[]) {
             if (arg_index + 1 < argc) {
                 fex_file = argv[++arg_index];
             } else {
-                fprintf(stderr, "Error: -f option requires a filename argument\n");
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_INVALID_PARAM));
                 usage(argv[0]);
-                return -1;
+                return EFEX_ERR_INVALID_PARAM;
             }
         } else if (strcmp(argv[arg_index], "-u") == 0) {
             if (arg_index + 1 < argc) {
                 uboot_file = argv[++arg_index];
             } else {
-                fprintf(stderr, "Error: -u option requires a filename argument\n");
+                fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_INVALID_PARAM));
                 usage(argv[0]);
-                return -1;
+                return EFEX_ERR_INVALID_PARAM;
             }
         } else {
-            fprintf(stderr, "Error: Unknown option '%s'\n", argv[arg_index]);
+            fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_INVALID_PARAM));
             usage(argv[0]);
-            return -1;
+            return EFEX_ERR_INVALID_PARAM;
         }
     }
 
     ret = sunxi_scan_usb_device(&ctx);
-    if (ret <= 0) {
-        fprintf(stderr, "ERROR: Can't get vaild EFEX device\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        return ret;
     }
     ret = sunxi_usb_init(&ctx);
-    if (ret <= 0) {
-        fprintf(stderr, "ERROR: EFEX device USB init failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     ret = sunxi_efex_init(&ctx);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX device init failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
 
     printf("Found EFEX device\n");
@@ -304,54 +346,61 @@ int main(const int argc, char *argv[]) {
 
     uint32_t flash_type = 0;
     ret = sunxi_efex_fes_query_storage(&ctx, &flash_type);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES query storage failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Storage Type: 0x%08x\n", flash_type);
 
     ret = sunxi_efex_fes_flash_set_onoff(&ctx, &flash_type, 0);
-    if (ret != 0) {
-        fprintf(stderr, "ERROR: EFEX FES flash set off failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Flash Set Off\n");
 
     uint32_t flash_size = 0;
     ret = sunxi_efex_fes_probe_flash_size(&ctx, &flash_size);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES flash set off failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Flash Size: 0x%08x\n", flash_size);
 
     ret = sunxi_efex_fes_flash_set_onoff(&ctx, &flash_type, 1);
-    if (ret != 0) {
-        fprintf(stderr, "ERROR: EFEX FES flash set on failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Flash Set On\n");
 
     ret = sunxi_efex_fes_probe_flash_size(&ctx, &flash_size);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES flash set on failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Flash Size: 0x%08x\n", flash_size);
 
     char down_buf[16] = "Hello, EFEX FES\0";
     ret = sunxi_efex_fes_down(&ctx, down_buf, 16, 0x40000000, SUNXI_EFEX_DRAM_TAG);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES download failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Download data: %s\n", down_buf);
 
     char up_buf[16] = {0};
     ret = sunxi_efex_fes_up(&ctx, up_buf, 16, 0x40000000, SUNXI_EFEX_DRAM_TAG);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES upload failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Upload Data: %s\n", up_buf);
 
@@ -359,9 +408,10 @@ int main(const int argc, char *argv[]) {
 #if 0
     const uint8_t chip_id[129] = {0};
     ret = sunxi_efex_fes_get_chipid(&ctx, chip_id);
-    if (ret < 0) {
-        fprintf(stderr, "ERROR: EFEX FES get chipid failed\r\n");
-        return -1;
+    if (ret != EFEX_ERR_SUCCESS) {
+        fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
+        sunxi_usb_exit(&ctx);
+        return ret;
     }
     printf("Chip ID: %s\n", chip_id);
 #endif

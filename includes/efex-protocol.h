@@ -4,6 +4,53 @@
 #include <stdint.h>
 #include "compiler.h"
 
+/**
+ * @brief Error code definitions for EFEX operations
+ */
+enum sunxi_efex_error_t {
+    /* Generic Errors */
+    EFEX_ERR_SUCCESS = 0, /**< Success */
+    EFEX_ERR_INVALID_PARAM = -1, /**< Invalid parameter */
+    EFEX_ERR_NULL_PTR = -2, /**< Null pointer error */
+    EFEX_ERR_MEMORY = -3, /**< Memory allocation error */
+    EFEX_ERR_NOT_SUPPORT = -4, /**< Operation not supported */
+
+    /* USB Communication Errors */
+    EFEX_ERR_USB_INIT = -10, /**< USB initialization failed */
+    EFEX_ERR_USB_DEVICE_NOT_FOUND = -11, /**< Device not found */
+    EFEX_ERR_USB_OPEN = -12, /**< Failed to open device */
+    EFEX_ERR_USB_TRANSFER = -13, /**< USB transfer failed */
+    EFEX_ERR_USB_TIMEOUT = -14, /**< USB transfer timeout */
+
+    /* Protocol Errors */
+    EFEX_ERR_PROTOCOL = -20, /**< Protocol error */
+    EFEX_ERR_INVALID_RESPONSE = -21, /**< Invalid response from device */
+    EFEX_ERR_UNEXPECTED_STATUS = -22, /**< Unexpected status code */
+    EFEX_ERR_INVALID_STATE = -23, /**< Invalid device state */
+    EFEX_ERR_INVALID_DEVICE_MODE = -24, /**< Invalid device mode */
+
+    /* Operation Errors */
+    EFEX_ERR_OPERATION_FAILED = -30, /**< Operation failed */
+    EFEX_ERR_DEVICE_BUSY = -31, /**< Device is busy */
+    EFEX_ERR_DEVICE_NOT_READY = -32, /**< Device not ready */
+
+    /* Flash Related Errors */
+    EFEX_ERR_FLASH_ACCESS = -40, /**< Flash access error */
+    EFEX_ERR_FLASH_SIZE_PROBE = -41, /**< Flash size probing failed */
+    EFEX_ERR_FLASH_SET_ONOFF = -42, /**< Failed to set flash on/off */
+
+    /* Verification Errors */
+    EFEX_ERR_VERIFICATION = -50, /**< Verification failed */
+    EFEX_ERR_CRC_MISMATCH = -51, /**< CRC mismatch error */
+
+    /* File Operation Errors */
+    EFEX_ERR_FILE_OPEN = -60, /**< Failed to open file */
+    EFEX_ERR_FILE_READ = -61, /**< Failed to read file */
+    EFEX_ERR_FILE_WRITE = -62, /**< Failed to write file */
+    EFEX_ERR_FILE_SIZE = -63, /**< File size error */
+};
+
+
 enum sunxi_efex_cmd_t {
     /* Common Commands */
     EFEX_CMD_VERIFY_DEVICE = 0x0001,
@@ -168,6 +215,7 @@ struct sunxi_efex_device_resp_t {
 
 struct sunxi_efex_ctx_t {
     void *hdl;
+    void *usb_context;
     char *dev_name;
     int epout;
     int epin;
