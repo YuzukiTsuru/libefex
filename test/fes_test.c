@@ -8,7 +8,7 @@
 
 #define DEFAULT_BUFFER_SIZE 4096
 #define DEFAULT_ADDRESS 0x40000000
-#define WORK_MODE_USB_PRODUCT   0x10
+#define WORK_MODE_USB_PRODUCT 0x10
 
 struct boot_file_head_t {
     uint32_t jump_instruction; /* one intruction jumping to real code */
@@ -32,7 +32,7 @@ struct uboot_base_head_t {
     uint32_t uboot_length; /* the size of uboot */
     uint8_t version[8]; /* uboot version */
     uint8_t platform[8]; /* platform information */
-    uint32_t reserved; /*stamp space, 16bytes align */
+    uint32_t run_addr;
 };
 
 struct uboot_normal_gpio_cfg_t {
@@ -191,8 +191,8 @@ int init_device_fes(struct sunxi_efex_ctx_t *ctx, const char *fex_file, const ch
 
         printf("Downloading %ld bytes from %s to device...\n", file_size, uboot_file);
 
-        sunxi_efex_fel_write_memory(ctx, 0x42000000, buffer, file_size);
-        sunxi_efex_fel_exec(ctx, 0x42000000);
+        sunxi_efex_fel_write_memory(ctx, uboot_head->uboot_head.run_addr, buffer, file_size);
+        sunxi_efex_fel_exec(ctx, uboot_head->uboot_head.run_addr);
         free(buffer);
 
         printf("U-Boot file download completed successfully\n");
