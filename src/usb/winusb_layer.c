@@ -18,7 +18,7 @@ static int match_vid_pid(const char *device_path) {
         return 0;
     char pattern[64];
     snprintf(pattern, sizeof(pattern), "vid_%04x&pid_%04x", SUNXI_USB_VENDOR, SUNXI_USB_PRODUCT);
-    size_t n = strlen(device_path);
+    const size_t n = strlen(device_path);
     char *lower = (char *) malloc(n + 1);
     if (!lower)
         return 0;
@@ -116,7 +116,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
                 continue;
             }
 
-            PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA)
+            const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA)
                     malloc(required_size);
             if (detail_data == NULL) {
                 SetupDiDestroyDeviceInfoList(device_info_set);
@@ -133,12 +133,11 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
                         device_found = TRUE;
                         free(detail_data);
                         break;
-                    } else {
-                        fprintf(stderr, "ERROR: Failed to allocate memory for device name\n");
-                        free(detail_data);
-                        SetupDiDestroyDeviceInfoList(device_info_set);
-                        return -1;
                     }
+                    fprintf(stderr, "ERROR: Failed to allocate memory for device name\n");
+                    free(detail_data);
+                    SetupDiDestroyDeviceInfoList(device_info_set);
+                    return -1;
                 }
             }
             free(detail_data);

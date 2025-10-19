@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 
 #include "libefex.h"
@@ -74,7 +75,7 @@ int main() {
     }
     printf("Flash Size: 0x%08x\n", flash_size);
 
-    const char down_buf[16] = "Hello, EFEX FES\0";
+    char down_buf[16] = "Hello, EFEX FES\0";
     ret = sunxi_efex_fes_down(&ctx, down_buf, 16, 0x40000000, SUNXI_EFEX_DRAM_TAG);
     if (ret < 0) {
         fprintf(stderr, "ERROR: EFEX FES download failed\r\n");
@@ -82,7 +83,7 @@ int main() {
     }
     printf("Download data: %s\n", down_buf);
 
-    const char up_buf[16] = {0};
+    char up_buf[16] = {0};
     ret = sunxi_efex_fes_up(&ctx, (char *) up_buf, 16, 0x40000000, SUNXI_EFEX_DRAM_TAG);
     if (ret < 0) {
         fprintf(stderr, "ERROR: EFEX FES upload failed\r\n");
