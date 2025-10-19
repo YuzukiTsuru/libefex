@@ -49,7 +49,7 @@ int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, 
 
     while (remain_data > 0) {
         // Calculate current transfer length
-        uint32_t length = (remain_data > EFEX_CODE_MAX_SIZE) ? EFEX_CODE_MAX_SIZE : remain_data;
+        const uint32_t length = (remain_data > EFEX_CODE_MAX_SIZE) ? EFEX_CODE_MAX_SIZE : remain_data;
         remain_data -= length;
 
         // Add finish tag if this is the last data block
@@ -91,7 +91,7 @@ int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, con
     return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_DOWN);
 }
 
-int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
-                      enum sunxi_fes_data_type_t type) {
+int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,
+                      const enum sunxi_fes_data_type_t type) {
     return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_UP);
 }
