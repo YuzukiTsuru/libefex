@@ -97,6 +97,27 @@ struct sunxi_efex_response_t {
 EFEX_PACKED_END
 
 EFEX_PACKED_BEGIN
+struct sunxi_fes_reserved_t {
+    char* reserved[12];
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
+struct sunxi_fes_flash_t {
+    uint32_t flash_type;
+    char* reserved[8];
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
+struct sunxi_fes_trans_t {
+    uint32_t addr;
+    uint32_t len;
+    uint32_t flags;
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
 struct sunxi_fes_xfer_t {
     uint16_t cmd;
     uint16_t tag;
