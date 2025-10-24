@@ -14,8 +14,8 @@ extern "C" {
 #define DEFAULT_USB_TIMEOUT (10000)
 
 enum sunxi_usb_ids {
-    SUNXI_USB_VENDOR = 0x1f3a,
-    SUNXI_USB_PRODUCT = 0xefe8,
+	SUNXI_USB_VENDOR = 0x1f3a,
+	SUNXI_USB_PRODUCT = 0xefe8,
 };
 
 #define SUNXI_EFEX_CMD_LEN (0xc)
@@ -24,14 +24,14 @@ enum sunxi_usb_ids {
 #define SUNXI_VERIFY_RSP_MAGIC "AWUSBEFEX"
 
 enum sunxi_efex_usb_request_t {
-    AW_USB_READ = 0x11,
-    AW_USB_WRITE = 0x12,
+	AW_USB_READ = 0x11,
+	AW_USB_WRITE = 0x12,
 };
 
 enum sunxi_usb_fes_xfer_type_t {
-    FES_XFER_SEND = 0x0,
-    FES_XFER_RECV = 0x1,
-    FES_XFER_NONE = 0x2,
+	FES_XFER_SEND = 0x0,
+	FES_XFER_RECV = 0x1,
+	FES_XFER_NONE = 0x2,
 };
 
 /**
@@ -79,8 +79,7 @@ int sunxi_usb_bulk_recv(void *handle, int ep, char *buf, ssize_t len);
  *
  * @note This function uses libusb control transfer for sending requests.
  */
-int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_usb_request_t type,
-                           size_t length);
+int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_usb_request_t type, size_t length);
 
 /**
  * @brief Reads a USB response from the device.
@@ -186,8 +185,8 @@ int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx);
  * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
-                       const uint32_t cmd, const char *request_buf, const ssize_t request_len,
-                       const char *buf, const ssize_t len);
+					   const uint32_t cmd, const char *request_buf, const ssize_t request_len, const char *buf,
+					   const ssize_t len);
 
 /**
  * @brief Prints USB data buffer content in hexadecimal and ASCII format
@@ -216,4 +215,4 @@ void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type);
 }
 #endif
 
-#endif //EFEX_USB_LAYER_H
+#endif // EFEX_USB_LAYER_H

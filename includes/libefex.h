@@ -13,7 +13,6 @@ extern "C" {
 #include "efex-payloads.h"
 #include "efex-protocol.h"
 
-
 #ifdef __cplusplus
 }
 #endif

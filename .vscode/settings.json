@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.json": "jsonc",
+        "ending.h": "c",
+        "efex-common.h": "c"
+    }
+}

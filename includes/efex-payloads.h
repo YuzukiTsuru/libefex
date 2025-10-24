@@ -6,14 +6,15 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "libefex.h"
 #include "compiler.h"
 #include "efex-common.h"
+#include "libefex.h"
+
 
 enum sunxi_efex_fel_payloads_arch {
-    ARCH_ARM32,
-    ARCH_AARCH64,
-    ARCH_RISCV32_E907,
+	ARCH_ARM32,
+	ARCH_AARCH64,
+	ARCH_RISCV32_E907,
 };
 
 /**
@@ -25,46 +26,47 @@ enum sunxi_efex_fel_payloads_arch {
  * typically used in contexts like payload processing and device management.
  */
 struct payloads_ops {
-    /**
-     * @brief Name of the payload operations.
-     *
-     * This field holds the name of the payload operation in a string format.
-     */
-    const char name[32];
+	/**
+	 * @brief Name of the payload operations.
+	 *
+	 * This field holds the name of the payload operation in a string format.
+	 */
+	const char name[32];
 
-    /**
-     * @brief Architecture type of the payload.
-     *
-     * This field specifies the architecture type of the payload.
-     * It uses an enumeration type, sunxi_efex_payloads_arch, to define different supported architectures.
-     */
-    enum sunxi_efex_fel_payloads_arch arch;
+	/**
+	 * @brief Architecture type of the payload.
+	 *
+	 * This field specifies the architecture type of the payload.
+	 * It uses an enumeration type, sunxi_efex_payloads_arch, to define different supported architectures.
+	 */
+	enum sunxi_efex_fel_payloads_arch arch;
 
-    /**
-     * @brief Function to read a 32-bit value from the given address.
-     *
-     * This function pointer is used to read a 32-bit value from a specific memory address
-     * in the context of the provided sunxi_efex_ctx_t. It is typically used to retrieve
-     * data or register values from the payload.
-     *
-     * @param ctx Pointer to the context structure containing relevant state.
-     * @param addr Memory address from which the value is to be read.
-     * @return The 32-bit value read from the specified address.
-     */
-    uint32_t (*readl)(const struct sunxi_efex_ctx_t *ctx, uint32_t addr);
+	/**
+	 * @brief Function to read a 32-bit value from the given address.
+	 *
+	 * This function pointer is used to read a 32-bit value from a specific memory address
+	 * in the context of the provided sunxi_efex_ctx_t. It is typically used to retrieve
+	 * data or register values from the payload.
+	 *
+	 * @param ctx Pointer to the context structure containing relevant state.
+	 * @param addr Memory address from which the value is to be read.
+	 * @return The 32-bit value read from the specified address.
+	 */
+	int (*readl)(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, uint32_t *val);
 
-    /**
-     * @brief Function to write a 32-bit value to the given address.
-     *
-     * This function pointer is used to write a 32-bit value to a specific memory address
-     * in the context of the provided sunxi_efex_ctx_t. It is typically used to set or modify
-     * data or registers in the payload.
-     *
-     * @param ctx Pointer to the context structure containing relevant state.
-     * @param value The 32-bit value to be written.
-     * @param addr Memory address where the value should be written.
-     */
-    void (*writel)(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
+	/**
+	 * @brief Function to write a 32-bit value to the given address.
+	 *
+	 * This function pointer is used to write a 32-bit value to a specific memory address
+	 * in the context of the provided sunxi_efex_ctx_t. It is typically used to set or modify
+	 * data or registers in the payload.
+	 *
+	 * @param ctx Pointer to the context structure containing relevant state.
+	 * @param value The 32-bit value to be written.
+	 * @param addr Memory address where the value should be written.
+	 * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure
+	 */
+	int (*writel)(const struct sunxi_efex_ctx_t *ctx, uint32_t value, uint32_t addr);
 };
 
 /**
@@ -78,7 +80,7 @@ struct payloads_ops {
  * @param x The value to be byte-swapped.
  * @return The byte-swapped 32-bit value.
  */
-#define WARP_INST(x) (SWAB32((uint32_t)(x)))
+#define WARP_INST(x) (SWAB32((uint32_t) (x)))
 
 /**
  * @brief Initializes the payloads for the given architecture.
@@ -113,7 +115,8 @@ struct payloads_ops *sunxi_efex_fel_get_current_payload();
  * @param addr The address from which to read the 32-bit value.
  * @param val Placeholder for output parameter to store the read value.
  *
- * @return The 32-bit value read from the specified address on success, or a negative error code from enum sunxi_efex_error_t on failure
+ * @return The 32-bit value read from the specified address on success, or a negative error code from enum
+ * sunxi_efex_error_t on failure
  */
 int sunxi_efex_fel_payloads_readl(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, uint32_t *val);
 
@@ -135,4 +138,4 @@ int sunxi_efex_fel_payloads_writel(const struct sunxi_efex_ctx_t *ctx, uint32_t 
 }
 #endif
 
-#endif //EFEX_PAYLOADS_H
+#endif // EFEX_PAYLOADS_H

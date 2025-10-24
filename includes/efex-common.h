@@ -5,8 +5,9 @@
 extern "C" {
 #endif
 
-#include "libefex.h"
 #include "efex-protocol.h"
+#include "libefex.h"
+
 
 /**
  * @brief Send an EFEX request to the device.
@@ -21,8 +22,8 @@ extern "C" {
  *
  * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
-int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_cmd_t type,
-                            uint32_t addr, uint32_t length);
+int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_cmd_t type, uint32_t addr,
+							uint32_t length);
 
 /**
  * @brief Read the EFEX status from the device.
@@ -100,4 +101,4 @@ const char *sunxi_efex_strerror(int error_code);
 }
 #endif
 
-#endif //LIBEFEX_EFEX_COMMON_H
+#endif // LIBEFEX_EFEX_COMMON_H
