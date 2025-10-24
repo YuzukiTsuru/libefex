@@ -46,7 +46,7 @@ int sunxi_efex_fel_read(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, char 
 
 	int ret = EFEX_ERR_SUCCESS;
 	while (len > 0) {
-		const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
+		const uint32_t n = len > EFEX_CODE_MAX_SIZE ? EFEX_CODE_MAX_SIZE : (uint32_t) len;
 
 		ret = sunxi_send_efex_request(ctx, EFEX_CMD_FEL_READ, addr, n);
 		if (ret != EFEX_ERR_SUCCESS) {
@@ -85,7 +85,7 @@ int sunxi_efex_fel_write(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, cons
 
 	int ret = EFEX_ERR_SUCCESS;
 	while (len > 0) {
-		const uint32_t n = len > 65536 ? 65536 : (uint32_t) len;
+		const uint32_t n = len > EFEX_CODE_MAX_SIZE ? EFEX_CODE_MAX_SIZE : (uint32_t) len;
 
 		ret = sunxi_send_efex_request(ctx, EFEX_CMD_FEL_WRITE, addr, n);
 		if (ret != EFEX_ERR_SUCCESS) {
