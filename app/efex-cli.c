@@ -32,7 +32,7 @@ static void print_usage(void) {
 }
 
 static int parse_u32(const char *s, uint32_t *out) {
-	if (!s || !out)
+	if (!s)
 		return EFEX_ERR_INVALID_PARAM;
 	errno = 0;
 	const unsigned long long v = strtoull(s, NULL, 0); // auto-detect base (0x for hex)
@@ -45,7 +45,7 @@ static int parse_u32(const char *s, uint32_t *out) {
 }
 
 static int parse_size(const char *s, size_t *out) {
-	if (!s || !out)
+	if (!s)
 		return EFEX_ERR_INVALID_PARAM;
 	errno = 0;
 	const unsigned long long v = strtoull(s, NULL, 0);
@@ -97,9 +97,11 @@ int main(const int argc, char **argv) {
 	}
 
 	// Option parsing: look for -p <arch>
-	enum sunxi_efex_fel_payloads_arch arch = ARCH_RISCV32_E907; // default
+	enum sunxi_efex_fel_payloads_arch arch; // default
+	int use_payloads = 0;
 	for (int i = 1; i < argc - 1; ++i) {
 		if (strcmp(argv[i], "-p") == 0) {
+			use_payloads = 1;
 			arch = parse_arch(argv[i + 1]);
 			// Init payloads per selection
 			int ret = sunxi_efex_fel_payloads_init(arch);
@@ -175,6 +177,7 @@ int main(const int argc, char **argv) {
 		uint32_t cur = addr;
 		while (remaining > 0) {
 			const size_t n = remaining < chunk ? remaining : chunk;
+			// payloads version only has readl/writel, no read/write functions
 			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
@@ -247,7 +250,13 @@ int main(const int argc, char **argv) {
 			goto cleanup;
 		}
 		uint32_t val;
-		ret = sunxi_efex_fel_payloads_readl(&ctx, addr, &val);
+		// For read32, use payloads version when -p parameter is specified
+		if (use_payloads) {
+			ret = sunxi_efex_fel_payloads_readl(&ctx, addr, &val);
+		} else {
+			// Use sunxi_efex_fel_read function to read 4 bytes for normal version
+			ret = sunxi_efex_fel_read(&ctx, addr, (char *) &val, sizeof(val));
+		}
 		if (ret != EFEX_ERR_SUCCESS) {
 			fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
 			exit_code = 5;
@@ -273,7 +282,13 @@ int main(const int argc, char **argv) {
 			exit_code = 1;
 			goto cleanup;
 		}
-		ret = sunxi_efex_fel_payloads_writel(&ctx, value, addr);
+		// For write32, use payloads version when -p parameter is specified
+		if (use_payloads) {
+			ret = sunxi_efex_fel_payloads_writel(&ctx, value, addr);
+		} else {
+			// Use sunxi_efex_fel_write function to write 4 bytes for normal version
+			ret = sunxi_efex_fel_write(&ctx, addr, (const char *) &value, sizeof(value));
+		}
 		if (ret != EFEX_ERR_SUCCESS) {
 			fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
 			exit_code = 5;
@@ -318,6 +333,7 @@ int main(const int argc, char **argv) {
 		uint32_t cur = addr;
 		while (remaining > 0) {
 			size_t n = remaining < chunk ? remaining : chunk;
+			// payloads版本只有readl/writel，没有read/write函数
 			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
@@ -363,6 +379,7 @@ int main(const int argc, char **argv) {
 		size_t offset = 0;
 		size_t nread;
 		while ((nread = fread(buf, 1, chunk, fp)) > 0) {
+			// payloads版本只有readl/writel，没有read/write函数
 			ret = sunxi_efex_fel_write(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
@@ -388,6 +405,7 @@ int main(const int argc, char **argv) {
 			exit_code = 1;
 			goto cleanup;
 		}
+		// payloads version doesn't have exec function
 		ret = sunxi_efex_fel_exec(&ctx, addr);
 		if (ret != EFEX_ERR_SUCCESS) {
 			fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
