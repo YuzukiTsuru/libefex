@@ -42,8 +42,8 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 	}
 
 	HANDLE const usb_handle = (HANDLE) handle;
-	const size_t max_chunk	= 128 * 1024;
-	DWORD bytes_sent		= 0;
+	const size_t max_chunk = 128 * 1024;
+	DWORD bytes_sent = 0;
 
 	while (len > 0) {
 		const size_t chunk = len <= max_chunk ? len : max_chunk;
@@ -71,7 +71,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
 	}
 
 	HANDLE const usb_handle = (HANDLE) handle;
-	DWORD bytes_received	= 0;
+	DWORD bytes_received = 0;
 
 	const DWORD dwIoControlCode = CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0808, METHOD_IN_DIRECT, FILE_ANY_ACCESS);
 
@@ -93,7 +93,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 	}
 
 	SP_DEVICE_INTERFACE_DATA interface_data;
-	ULONG index		  = 0;
+	ULONG index = 0;
 	BOOL device_found = FALSE;
 
 	const LPGUID usb_device_guid = (LPGUID) &GUID_DEVINTERFACE_USB_DEVICE;
@@ -129,7 +129,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 			detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
 			if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, detail_data, required_size, NULL,
-												NULL)) {
+			                                    NULL)) {
 				if (match_vid_pid(detail_data->DevicePath)) {
 					ctx->dev_name = (char *) malloc(strlen(detail_data->DevicePath) + 1);
 					if (ctx->dev_name != NULL) {
@@ -159,7 +159,7 @@ int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
 	}
 
 	ctx->hdl = CreateFile(ctx->dev_name, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-						  OPEN_EXISTING, 0, NULL);
+	                      OPEN_EXISTING, 0, NULL);
 
 	if (ctx->hdl == INVALID_HANDLE_VALUE) {
 		return EFEX_ERR_USB_OPEN;

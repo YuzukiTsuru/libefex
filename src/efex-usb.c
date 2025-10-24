@@ -12,16 +12,16 @@
 
 
 int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_usb_request_t type,
-						   const size_t length) {
+                           const size_t length) {
 	if (!ctx || !ctx->hdl) {
 		return EFEX_ERR_NULL_PTR;
 	}
 
 	struct sunxi_usb_request_t req = {
-			.magic			= SUNXI_USB_REQ_MAGIC,
-			.tab			= 0x0,
-			.data_length	= cpu_to_le32(length),
-			.cmd_length		= SUNXI_EFEX_CMD_LEN,
+			.magic = SUNXI_USB_REQ_MAGIC,
+			.tab = 0x0,
+			.data_length = cpu_to_le32(length),
+			.cmd_length = SUNXI_EFEX_CMD_LEN,
 			.cmd_package[0] = type,
 	};
 	req.cmd_length = (uint8_t) req.data_length;
@@ -97,8 +97,8 @@ int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, const s
 }
 
 int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
-					   const uint32_t cmd, const char *request_buf, const ssize_t request_len, const char *buf,
-					   const ssize_t len) {
+                       const uint32_t cmd, const char *request_buf, const ssize_t request_len, const char *buf,
+                       const ssize_t len) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -108,8 +108,8 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 	}
 
 	struct sunxi_fes_xfer_t fes_xfer = {
-			.cmd   = cpu_to_le16((uint16_t) cmd),
-			.tag   = 0x0,
+			.cmd = cpu_to_le16((uint16_t) cmd),
+			.tag = 0x0,
 			.magic = SUNXI_USB_REQ_MAGIC,
 	};
 

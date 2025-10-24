@@ -6,7 +6,7 @@
 
 int main() {
 	struct sunxi_efex_ctx_t ctx = {0};
-	int ret						= 0;
+	int ret = 0;
 
 	// Test common efex init
 	printf("Starting efex common tests\n");
@@ -71,7 +71,7 @@ int main() {
 	sunxi_efex_fel_payloads_init(ARCH_RISCV32_E907);
 
 	uint32_t id[4] = {0};
-	int errors[4]  = {0};
+	int errors[4] = {0};
 
 	// Execute all read operations first
 	uint32_t id0_val, id1_val, id2_val, id3_val;

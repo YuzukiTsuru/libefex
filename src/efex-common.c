@@ -11,16 +11,16 @@
 #include "ending.h"
 
 int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_efex_cmd_t type, const uint32_t addr,
-							const uint32_t length) {
+                            const uint32_t length) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
 
 	const struct sunxi_efex_request_t req = {
-			.cmd	 = cpu_to_le16(type),
-			.tag	 = 0x0,
+			.cmd = cpu_to_le16(type),
+			.tag = 0x0,
 			.address = cpu_to_le32(addr),
-			.len	 = cpu_to_le32(length),
+			.len = cpu_to_le32(length),
 	};
 
 	const int ret = sunxi_usb_write(ctx, &req, sizeof(struct sunxi_efex_request_t));
@@ -37,7 +37,7 @@ int sunxi_read_efex_status(const struct sunxi_efex_ctx_t *ctx) {
 	}
 
 	const struct sunxi_efex_response_t resp = {0};
-	const int ret							= sunxi_usb_read(ctx, &resp, sizeof(resp));
+	const int ret = sunxi_usb_read(ctx, &resp, sizeof(resp));
 	if (ret != 0) {
 		return EFEX_ERR_USB_TRANSFER;
 	}
@@ -91,12 +91,12 @@ int sunxi_efex_init(struct sunxi_efex_ctx_t *ctx) {
 	}
 
 	// Process the chip data
-	ctx->resp.id				 = le32_to_cpu(ctx->resp.id);
-	ctx->resp.firmware			 = le32_to_cpu(ctx->resp.firmware);
-	ctx->resp.mode				 = le16_to_cpu(ctx->resp.mode);
+	ctx->resp.id = le32_to_cpu(ctx->resp.id);
+	ctx->resp.firmware = le32_to_cpu(ctx->resp.firmware);
+	ctx->resp.mode = le16_to_cpu(ctx->resp.mode);
 	ctx->resp.data_start_address = le32_to_cpu(ctx->resp.data_start_address);
-	ctx->resp.data_length		 = ctx->resp.data_length;
-	ctx->resp.data_flag			 = ctx->resp.data_flag;
+	ctx->resp.data_length = ctx->resp.data_length;
+	ctx->resp.data_flag = ctx->resp.data_flag;
 
 	return EFEX_ERR_SUCCESS;
 }

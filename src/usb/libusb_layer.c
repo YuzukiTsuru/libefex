@@ -19,7 +19,7 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 	}
 
 	libusb_device_handle *hdl = (libusb_device_handle *) handle;
-	const size_t max_chunk	  = 128 * 1024;
+	const size_t max_chunk = 128 * 1024;
 	int bytes;
 
 	while (len > 0) {
@@ -64,9 +64,9 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
 
-	libusb_device **list	= NULL;
+	libusb_device **list = NULL;
 	libusb_context *context = NULL;
-	int device_found		= 0;
+	int device_found = 0;
 
 	libusb_init(&context);
 	const size_t count = libusb_get_device_list(context, &list);

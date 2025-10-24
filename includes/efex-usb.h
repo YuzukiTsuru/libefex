@@ -3,6 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 #include <stdint.h>
@@ -185,8 +186,8 @@ int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx);
  * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_fes_xfer_type_t type,
-					   const uint32_t cmd, const char *request_buf, const ssize_t request_len, const char *buf,
-					   const ssize_t len);
+                       const uint32_t cmd, const char *request_buf, const ssize_t request_len, const char *buf,
+                       const ssize_t len);
 
 /**
  * @brief Prints USB data buffer content in hexadecimal and ASCII format

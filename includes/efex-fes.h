@@ -3,6 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 #include "efex-common.h"
@@ -15,19 +16,19 @@ extern "C" {
 enum sunxi_fes_data_type_t {
 	SUNXI_EFEX_TAG_NONE = 0x0, /**< No tag */
 	/* Data type tag */
-	SUNXI_EFEX_DRAM_TAG = 0x7f00, /**< DRAM configuration data tag */
-	SUNXI_EFEX_MBR_TAG = 0x7f01, /**< MBR partition table tag */
-	SUNXI_EFEX_BOOT1_TAG = 0x7f02, /**< BOOT1 tag */
-	SUNXI_EFEX_BOOT0_TAG = 0x7f03, /**< BOOT0 tag */
-	SUNXI_EFEX_ERASE_TAG = 0x7f04, /**< Erase command tag */
+	SUNXI_EFEX_DRAM_TAG = 0x7f00,         /**< DRAM configuration data tag */
+	SUNXI_EFEX_MBR_TAG = 0x7f01,          /**< MBR partition table tag */
+	SUNXI_EFEX_BOOT1_TAG = 0x7f02,        /**< BOOT1 tag */
+	SUNXI_EFEX_BOOT0_TAG = 0x7f03,        /**< BOOT0 tag */
+	SUNXI_EFEX_ERASE_TAG = 0x7f04,        /**< Erase command tag */
 	SUNXI_EFEX_FULLIMG_SIZE_TAG = 0x7f10, /**< Full image size tag */
-	SUNXI_EFEX_EXT4_UBIFS_TAG = 0x7ff0, /**< EXT4/UBIFS file system tag */
-	SUNXI_EFEX_FLASH_TAG = 0x8000, /**< FLASH operation tag */
+	SUNXI_EFEX_EXT4_UBIFS_TAG = 0x7ff0,   /**< EXT4/UBIFS file system tag */
+	SUNXI_EFEX_FLASH_TAG = 0x8000,        /**< FLASH operation tag */
 	/* Data type mask */
 	SUNXI_EFEX_DATA_TYPE_MASK = 0x7fff, /**< Data type mask */
 
 	/* Transfer tag */
-	SUNXI_EFEX_TRANS_START_TAG = 0x20000, /**< Transfer start tag */
+	SUNXI_EFEX_TRANS_START_TAG = 0x20000,  /**< Transfer start tag */
 	SUNXI_EFEX_TRANS_FINISH_TAG = 0x10000, /**< Transfer finish tag */
 
 	/* Transfer mask */
@@ -91,7 +92,7 @@ int sunxi_efex_fes_get_chipid(const struct sunxi_efex_ctx_t *ctx, const char *ch
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
-						enum sunxi_fes_data_type_t type);
+                        enum sunxi_fes_data_type_t type);
 
 /**
  * @brief Receive data from FES (upload)
@@ -104,7 +105,7 @@ int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, con
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
-					  enum sunxi_fes_data_type_t type);
+                      enum sunxi_fes_data_type_t type);
 
 /**
  * @brief Verify content at specified address and size
@@ -116,7 +117,7 @@ int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_verify_value(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, uint64_t size,
-								const struct sunxi_fes_verify_resp_t *buf);
+                                const struct sunxi_fes_verify_resp_t *buf);
 
 /**
  * @brief Verify status of specified tag
@@ -127,7 +128,7 @@ int sunxi_efex_fes_verify_value(const struct sunxi_efex_ctx_t *ctx, uint32_t add
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_verify_status(const struct sunxi_efex_ctx_t *ctx, uint32_t tag,
-								 const struct sunxi_fes_verify_resp_t *buf);
+                                 const struct sunxi_fes_verify_resp_t *buf);
 
 /**
  * @brief Verify UBOOT block
@@ -138,7 +139,7 @@ int sunxi_efex_fes_verify_status(const struct sunxi_efex_ctx_t *ctx, uint32_t ta
  * @return 0 on success, negative value on failure
  */
 int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, uint32_t tag,
-									const struct sunxi_fes_verify_resp_t *buf);
+                                    const struct sunxi_fes_verify_resp_t *buf);
 
 /**
  * @brief Set tool mode

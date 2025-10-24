@@ -19,7 +19,7 @@ static int payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const
 	 */
 	const uint32_t payload[] = {
 			WARP_INST(0b00110111000000110100000000000000),
-			/* lui t1,0x400 */							   /* Load immediate value (1 << 22) into t1 */
+			/* lui t1,0x400 */                             /* Load immediate value (1 << 22) into t1 */
 			WARP_INST(0b01110011001000000000001101111100), /* csrs	mxstatus,t1 */
 			/* Set the corresponding bit in csr mxstatus */
 			WARP_INST(0b00001111000100000000000000000000), /* fence.i */
@@ -37,7 +37,7 @@ static int payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const
 			WARP_INST(0b00010111000000110000000000000000),
 			/* auipc t1,0x0 */ /* Load zero t1 */
 			WARP_INST(0b00010011000000110100001100000001),
-			/* addi	t1,t1,20 */							   /* Load var_val to t0 */
+			/* addi	t1,t1,20 */                            /* Load var_val to t0 */
 			WARP_INST(0b00100011001000000101001100000000), /* sw t0,0(t1) */
 			/* Store the value in t0 into the address stored in t1 */
 			WARP_INST(0b01100111100000000000000000000000),
@@ -54,8 +54,8 @@ static int payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const
 
 	// Convert address to little-endian format before writing to memory
 	uint32_t addr_le32 = cpu_to_le32(addr);
-	uint32_t tmp_val   = 0;
-	int ret			   = EFEX_ERR_SUCCESS;
+	uint32_t tmp_val = 0;
+	int ret = EFEX_ERR_SUCCESS;
 
 	// Write the payload to the specified memory address in the context
 	ret = sunxi_efex_fel_write(ctx, ctx->resp.data_start_address, (void *) payload, sizeof(payload));
@@ -65,7 +65,7 @@ static int payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const
 
 	// Write the address to be read from into memory
 	ret = sunxi_efex_fel_write(ctx, ctx->resp.data_start_address + sizeof(payload), (void *) &addr_le32,
-							   sizeof(addr_le32));
+	                           sizeof(addr_le32));
 	if (ret != EFEX_ERR_SUCCESS) {
 		return ret;
 	}
@@ -78,7 +78,7 @@ static int payloads_riscv32_e907_readl(const struct sunxi_efex_ctx_t *ctx, const
 
 	// Read the value from memory after execution
 	ret = sunxi_efex_fel_read(ctx, ctx->resp.data_start_address + sizeof(payload) + sizeof(addr_le32),
-							  (void *) &tmp_val, sizeof(tmp_val));
+	                          (void *) &tmp_val, sizeof(tmp_val));
 	if (ret != EFEX_ERR_SUCCESS) {
 		return ret;
 	}
@@ -157,8 +157,8 @@ static int payloads_riscv32_e907_writel(const struct sunxi_efex_ctx_t *ctx, cons
 
 // Structure defining the operations for the riscv32_e907 platform
 struct payloads_ops riscv32_e907_ops = {
-		.name	= "riscv32_e907",
-		.arch	= ARCH_RISCV32_E907,
-		.readl	= payloads_riscv32_e907_readl,
+		.name = "riscv32_e907",
+		.arch = ARCH_RISCV32_E907,
+		.readl = payloads_riscv32_e907_readl,
 		.writel = payloads_riscv32_e907_writel,
 };

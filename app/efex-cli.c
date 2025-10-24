@@ -19,22 +19,22 @@
 
 static void print_usage(void) {
 	fprintf(stderr, "usage:\n"
-					"    efex version                                        - Show chip version\n"
-					"    efex hexdump <address> <length>                     - Dumps memory region in hex\n"
-					"    efex dump <address> <length>                        - Binary memory dump to stdout\n"
-					"    efex read32 <address>                               - Read 32-bits value from device memory\n"
-					"    efex write32 <address> <value>                      - Write 32-bits value to device memory\n"
-					"    efex read <address> <length> <file>                 - Read memory to file\n"
-					"    efex write <address> <file>                         - Write file to memory\n"
-					"    efex exec <address>                                 - Call function address\n"
-					"[options]\n"
-					"     -p payloads [arm, aarch64, e907]\n");
+	        "    efex version                                        - Show chip version\n"
+	        "    efex hexdump <address> <length>                     - Dumps memory region in hex\n"
+	        "    efex dump <address> <length>                        - Binary memory dump to stdout\n"
+	        "    efex read32 <address>                               - Read 32-bits value from device memory\n"
+	        "    efex write32 <address> <value>                      - Write 32-bits value to device memory\n"
+	        "    efex read <address> <length> <file>                 - Read memory to file\n"
+	        "    efex write <address> <file>                         - Write file to memory\n"
+	        "    efex exec <address>                                 - Call function address\n"
+	        "[options]\n"
+	        "     -p payloads [arm, aarch64, e907]\n");
 }
 
 static int parse_u32(const char *s, uint32_t *out) {
 	if (!s || !out)
 		return EFEX_ERR_INVALID_PARAM;
-	errno					   = 0;
+	errno = 0;
 	const unsigned long long v = strtoull(s, NULL, 0); // auto-detect base (0x for hex)
 	if (errno != 0)
 		return EFEX_ERR_INVALID_PARAM;
@@ -47,7 +47,7 @@ static int parse_u32(const char *s, uint32_t *out) {
 static int parse_size(const char *s, size_t *out) {
 	if (!s || !out)
 		return EFEX_ERR_INVALID_PARAM;
-	errno					   = 0;
+	errno = 0;
 	const unsigned long long v = strtoull(s, NULL, 0);
 	if (errno != 0)
 		return EFEX_ERR_INVALID_PARAM;
@@ -112,7 +112,7 @@ int main(const int argc, char **argv) {
 
 	// Setup context and device
 	struct sunxi_efex_ctx_t ctx = {0};
-	int ret						= EFEX_ERR_SUCCESS;
+	int ret = EFEX_ERR_SUCCESS;
 
 	ret = sunxi_scan_usb_device(&ctx);
 	if (ret != EFEX_ERR_SUCCESS) {
@@ -172,10 +172,10 @@ int main(const int argc, char **argv) {
 			goto cleanup;
 		}
 		size_t remaining = length;
-		uint32_t cur	 = addr;
+		uint32_t cur = addr;
 		while (remaining > 0) {
 			const size_t n = remaining < chunk ? remaining : chunk;
-			ret			   = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
+			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
 				free(buf);
@@ -218,10 +218,10 @@ int main(const int argc, char **argv) {
 			goto cleanup;
 		}
 		size_t remaining = length;
-		uint32_t cur	 = addr;
+		uint32_t cur = addr;
 		while (remaining > 0) {
 			const size_t n = remaining < chunk ? remaining : chunk;
-			ret			   = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
+			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
 				free(buf);
@@ -300,7 +300,7 @@ int main(const int argc, char **argv) {
 			goto cleanup;
 		}
 		const char *file = argv[4];
-		FILE *fp		 = fopen(file, "wb");
+		FILE *fp = fopen(file, "wb");
 		if (!fp) {
 			fprintf(stderr, "ERROR: %s: '%s'\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), file);
 			exit_code = 1;
@@ -315,10 +315,10 @@ int main(const int argc, char **argv) {
 			goto cleanup;
 		}
 		size_t remaining = length;
-		uint32_t cur	 = addr;
+		uint32_t cur = addr;
 		while (remaining > 0) {
 			size_t n = remaining < chunk ? remaining : chunk;
-			ret		 = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
+			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
 				free(buf);
@@ -338,9 +338,9 @@ int main(const int argc, char **argv) {
 			exit_code = 1;
 			goto cleanup;
 		}
-		uint32_t addr	 = 0;
+		uint32_t addr = 0;
 		const char *file = argv[3];
-		int parse_ret	 = parse_u32(argv[2], &addr);
+		int parse_ret = parse_u32(argv[2], &addr);
 		if (parse_ret != EFEX_ERR_SUCCESS) {
 			fprintf(stderr, "Invalid address: %s\n", sunxi_efex_strerror(parse_ret));
 			exit_code = 1;

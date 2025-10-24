@@ -3,6 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 #include "efex-protocol.h"
@@ -23,7 +24,7 @@ extern "C" {
  * @return EFEX_ERR_SUCCESS on success, or an error code from enum sunxi_efex_error_t on failure.
  */
 int sunxi_send_efex_request(const struct sunxi_efex_ctx_t *ctx, enum sunxi_efex_cmd_t type, uint32_t addr,
-							uint32_t length);
+                            uint32_t length);
 
 /**
  * @brief Read the EFEX status from the device.

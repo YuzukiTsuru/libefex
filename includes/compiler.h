@@ -3,6 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 // Define cross-platform packing macros to address MSVC's lack of support for __attribute__((packed))
