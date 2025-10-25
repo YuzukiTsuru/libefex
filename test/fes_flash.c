@@ -478,12 +478,11 @@ int download_raw_file(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 }
 
 int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_file, const uint64_t address,
-                      const int erase_flag) {
+                      uint64_t file_size, const int erase_flag) {
 	int ret = 0;
 	char *full_firmware_path = NULL;
 	FILE *fp = NULL;
 	char *buffer = NULL;
-	long file_size = 0;
 
 	// Ensure firmware file has .fex extension
 	const char *fex_ext = ".fex";
@@ -525,9 +524,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 			goto cleanup;
 		}
 	} else {
-		// File doesn't exist, use default size of 4KB filled with zeros
-		file_size = 4096;
-		printf("WARNING: File %s not found, using 4KB zero-filled buffer\n", full_firmware_path);
+		printf("WARNING: File %s not found, using %llu zero-filled buffer\n", full_firmware_path, file_size);
 	}
 
 	// Allocate buffer for file content
@@ -544,7 +541,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	if (fp) {
 		const size_t bytes_read = fread(buffer, 1, file_size, fp);
 		if (bytes_read != (size_t) file_size) {
-			fprintf(stderr, "WARNING: Read %zu bytes, expected %ld bytes from %s\n",
+			fprintf(stderr, "WARNING: Read %zu bytes, expected %llu bytes from %s\n",
 			        bytes_read, file_size, full_firmware_path);
 			// Continue with whatever was read, buffer is already zero-filled
 		}
@@ -572,7 +569,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	}
 
 	// Download actual firmware data
-	printf("Downloading %ld bytes firmware %s to address 0x%016llx...\n",
+	printf("Downloading %llu bytes firmware %s to address 0x%016llx...\n",
 	       file_size, full_firmware_path, (unsigned long long) address);
 	ret = sunxi_efex_fes_down(ctx, buffer, (ssize_t) file_size, (uint32_t) address, 0);
 	if (ret != EFEX_ERR_SUCCESS) {
@@ -608,6 +605,7 @@ cleanup:
 int main(const int argc, char *argv[]) {
 	struct sunxi_efex_ctx_t ctx = {0};
 	int ret = 0;
+	const int erase_all = 1;
 
 	ret = sunxi_scan_usb_device(&ctx);
 	if (ret != EFEX_ERR_SUCCESS) {
@@ -699,11 +697,18 @@ int main(const int argc, char *argv[]) {
 	// Print MBR information
 	dump_mbr_info(mbr);
 
+	if (erase_all) {
+		uint32_t erase_info[4];
+		erase_info[0] = 0x12;
+		sunxi_efex_fes_down(&ctx, (const char *) erase_info, sizeof(erase_info), 0, SUNXI_EFEX_ERASE_TAG);
+	}
+
 	download_raw(&ctx, buffer, file_size, SUNXI_EFEX_MBR_TAG);
 
 	for (uint32_t i = 0; i < mbr->PartCount; i++) {
 		const struct sunxi_partition_t *part = &mbr->array[i];
-		download_firmware(&ctx, (char *) part->name, part->addrlo | ((uint64_t) part->addrhi << 32), 0);
+		download_firmware(&ctx, (char *) part->name, part->addrlo | ((uint64_t) part->addrhi << 32),
+		                  part->lenlo | ((uint64_t) part->lenhi << 32), 0);
 	}
 
 	free(buffer);
