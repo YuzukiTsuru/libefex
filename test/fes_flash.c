@@ -406,7 +406,7 @@ int download_raw_file(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	const size_t ext_len = strlen(fex_ext);
 
 	// Check if the file already has .fex extension
-	if (firmware_len >= ext_len && strcasecmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
+	if (firmware_len >= ext_len && _stricmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
 		// File already has .fex extension, use it as is
 		full_firmware_path = strdup(firmware_file);
 	} else {
@@ -490,7 +490,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	const size_t ext_len = strlen(fex_ext);
 
 	// Check if the file already has .fex extension
-	if (firmware_len >= ext_len && strcasecmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
+	if (firmware_len >= ext_len && _stricmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
 		// File already has .fex extension, use it as is
 		full_firmware_path = strdup(firmware_file);
 	} else {
@@ -615,7 +615,7 @@ int download_raw_image(const struct sunxi_efex_ctx_t *ctx, const char *firmware_
 	const size_t ext_len = strlen(fex_ext);
 	
 	// Check if the file already has .fex extension
-	if (firmware_len >= ext_len && strcasecmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
+	if (firmware_len >= ext_len && _stricmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
 		// File already has .fex extension, use it as is
 		full_firmware_path = strdup(firmware_file);
 	} else {
