@@ -25,7 +25,7 @@ libefex is a cross-platform library for interacting with Allwinner chips in both
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/libefex.git
+git clone https://github.com/YuzukiTsuru/libefex.git
 cd libefex
 
 # Create build directory
