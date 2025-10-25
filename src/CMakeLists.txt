@@ -1,8 +1,5 @@
 add_library(arch-obj OBJECT
         arch/riscv32_e907/efex-payloads.c
-        ../includes/efex-common.h
-        ../includes/efex-fel.h
-        ../includes/efex-fes.h
 )
 
 add_library(efex STATIC
