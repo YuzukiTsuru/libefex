@@ -757,6 +757,12 @@ int main(const int argc, char *argv[]) {
 		init_device_fes(&ctx, "fes1.fex", "u-boot-efex.fex");
 	}
 
+	if (erase_all) {
+		uint32_t erase_info[4];
+		erase_info[0] = 0x12;
+		sunxi_efex_fes_down(&ctx, (const char *) erase_info, sizeof(erase_info), 0, SUNXI_EFEX_ERASE_TAG);
+	}
+
 	if (full_image) {
 		ret = download_raw_image(&ctx, "rootfs.fex");
 		return ret;
@@ -814,12 +820,6 @@ int main(const int argc, char *argv[]) {
 
 	// Print MBR information
 	dump_mbr_info(mbr);
-
-	if (erase_all) {
-		uint32_t erase_info[4];
-		erase_info[0] = 0x12;
-		sunxi_efex_fes_down(&ctx, (const char *) erase_info, sizeof(erase_info), 0, SUNXI_EFEX_ERASE_TAG);
-	}
 
 	download_raw(&ctx, buffer, file_size, SUNXI_EFEX_MBR_TAG);
 
