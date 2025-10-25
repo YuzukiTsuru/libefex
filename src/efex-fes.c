@@ -121,7 +121,7 @@ int sunxi_efex_fes_verify_status(const struct sunxi_efex_ctx_t *ctx, const uint3
 	                          sizeof(verify_status), (const char *) buf, sizeof(struct sunxi_fes_verify_resp_t));
 }
 
-int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, uint32_t tag,
+int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, const uint32_t tag,
                                     const struct sunxi_fes_verify_resp_t *buf) {
 	const struct sunxi_fes_verify_status_t verify_status = {
 			.addr = 0x0,
@@ -130,4 +130,15 @@ int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, uint32_t
 	};
 	return sunxi_usb_fes_xfer(ctx, FES_XFER_RECV, EFEX_CMD_FES_VERIFY_UBOOT_BLK, (const char *) &verify_status,
 	                          sizeof(verify_status), (const char *) buf, sizeof(struct sunxi_fes_verify_resp_t));
+}
+
+int sunxi_efex_fes_tool_mode(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_fes_tool_mode_t tool_mode,
+                             const enum sunxi_fes_tool_mode_t next_mode) {
+	const struct sunxi_fes_set_tool_mode_t fes_tool_mode = {
+			.tool_mode = cpu_to_le32(tool_mode),
+			.next_mode = cpu_to_le32(next_mode),
+			.reserved = 0x0,
+	};
+	return sunxi_usb_fes_xfer(ctx, FES_XFER_NONE, EFEX_CMD_FES_TOOL_MODE, (const char *) &fes_tool_mode,
+	                          sizeof(fes_tool_mode), NULL, 0);
 }

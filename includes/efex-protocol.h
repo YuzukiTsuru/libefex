@@ -4,6 +4,8 @@
 #ifdef __cplusplus
 extern "C" {
 
+
+
 #endif
 
 #include <stdint.h>
@@ -99,6 +101,14 @@ enum sunxi_verify_device_mode_t {
 	DEVICE_MODE_UPDATE_HOT = 0x4,
 };
 
+enum sunxi_fes_tool_mode_t {
+	TOOL_MODE_NORMAL = 0x1,
+	TOOL_MODE_REBOOT = 0x2,
+	TOOL_MODE_POWEROFF = 0x3,
+	TOOL_MODE_REUPDATE = 0x4,
+	TOOL_MODE_BOOT = 0x5,
+};
+
 /* clang-format off */
 EFEX_PACKED_BEGIN
 struct sunxi_usb_request_t {
@@ -189,6 +199,14 @@ struct sunxi_fes_verify_resp_t {
     uint32_t flag;
     int32_t fes_crc;
     int32_t media_crc;
+} EFEX_PACKED;
+EFEX_PACKED_END
+
+EFEX_PACKED_BEGIN
+struct sunxi_fes_set_tool_mode_t {
+	uint32_t tool_mode;
+	uint32_t next_mode;
+	uint32_t reserved;
 } EFEX_PACKED;
 EFEX_PACKED_END
 

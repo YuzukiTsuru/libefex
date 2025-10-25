@@ -4,6 +4,8 @@
 #ifdef __cplusplus
 extern "C" {
 
+
+
 #endif
 
 #include "efex-common.h"
@@ -149,7 +151,8 @@ int sunxi_efex_fes_verify_uboot_blk(const struct sunxi_efex_ctx_t *ctx, uint32_t
  * @param next_mode Next mode value
  * @return 0 on success, negative value on failure
  */
-int sunxi_efex_fes_tool_mode(const struct sunxi_efex_ctx_t *ctx, uint32_t tool_mode, uint32_t next_mode);
+int sunxi_efex_fes_tool_mode(const struct sunxi_efex_ctx_t *ctx, enum sunxi_fes_tool_mode_t tool_mode,
+                             enum sunxi_fes_tool_mode_t next_mode);
 
 
 #ifdef __cplusplus
