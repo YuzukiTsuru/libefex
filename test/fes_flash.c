@@ -719,5 +719,8 @@ int main(const int argc, char *argv[]) {
 
 	sunxi_efex_fes_tool_mode(&ctx, TOOL_MODE_REBOOT, TOOL_MODE_REBOOT);
 
+	// Free USB resources before exiting
+	sunxi_usb_exit(&ctx);
+
 	return 0;
 }
