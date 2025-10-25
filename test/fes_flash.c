@@ -602,10 +602,122 @@ cleanup:
 	return ret;
 }
 
+int download_raw_image(const struct sunxi_efex_ctx_t *ctx, const char *firmware_file) {
+	int ret = 0;
+	char *full_firmware_path = NULL;
+	FILE *fp = NULL;
+	char *buffer = NULL;
+	long file_size = 0;
+	
+	// Ensure firmware file has .fex extension
+	const char *fex_ext = ".fex";
+	const size_t firmware_len = strlen(firmware_file);
+	const size_t ext_len = strlen(fex_ext);
+	
+	// Check if the file already has .fex extension
+	if (firmware_len >= ext_len && strcasecmp(firmware_file + firmware_len - ext_len, fex_ext) == 0) {
+		// File already has .fex extension, use it as is
+		full_firmware_path = strdup(firmware_file);
+	} else {
+		// Add .fex extension
+		full_firmware_path = (char *) malloc(firmware_len + ext_len + 1);
+		if (!full_firmware_path) {
+			fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
+			return EFEX_ERR_MEMORY;
+		}
+		sprintf(full_firmware_path, "%s%s", firmware_file, fex_ext);
+	}
+	
+	if (!full_firmware_path) {
+		fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
+		return EFEX_ERR_MEMORY;
+	}
+	
+	printf("Downloading raw image: %s\n", full_firmware_path);
+	
+	// Open firmware file
+	fp = fopen(full_firmware_path, "rb");
+	if (!fp) {
+		fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_OPEN), full_firmware_path);
+		free(full_firmware_path);
+		return EFEX_ERR_FILE_OPEN;
+	}
+
+	// Get file size
+	fseek(fp, 0, SEEK_END);
+	file_size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	if (file_size <= 0) {
+		fprintf(stderr, "ERROR: %s: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_SIZE), full_firmware_path);
+		fclose(fp);
+		free(full_firmware_path);
+		return EFEX_ERR_FILE_SIZE;
+	}
+
+	// Allocate buffer for file content
+	buffer = (char *) malloc(file_size);
+	if (!buffer) {
+		fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
+		fclose(fp);
+		free(full_firmware_path);
+		return EFEX_ERR_MEMORY;
+	}
+
+	// Read file content
+	const size_t bytes_read = fread(buffer, 1, file_size, fp);
+	fclose(fp);
+
+	if (bytes_read != (size_t) file_size) {
+		fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(EFEX_ERR_FILE_READ));
+		free(buffer);
+		free(full_firmware_path);
+		return EFEX_ERR_FILE_READ;
+	}
+
+	// Send full image size first
+	printf("Sending full image size: %ld bytes\n", file_size);
+	ret = sunxi_efex_fes_down(ctx, (const char *) &file_size, sizeof(file_size), 0, SUNXI_EFEX_FULLIMG_SIZE_TAG);
+	if (ret != EFEX_ERR_SUCCESS) {
+		fprintf(stderr, "ERROR: Failed to send full image size: %s\r\n", sunxi_efex_strerror(ret));
+		free(buffer);
+		free(full_firmware_path);
+		return ret;
+	}
+
+	// Download raw image data
+	printf("Downloading %ld bytes raw image data to device...\n", file_size);
+	ret = sunxi_efex_fes_down(ctx, buffer, (ssize_t) file_size, 0, 0);
+	if (ret != EFEX_ERR_SUCCESS) {
+		fprintf(stderr, "ERROR: Failed to download raw image: %s\r\n", sunxi_efex_strerror(ret));
+		free(buffer);
+		free(full_firmware_path);
+		return ret;
+	}
+
+	// Verify download status
+	const struct sunxi_fes_verify_resp_t verify_resp = {0};
+	ret = sunxi_efex_fes_verify_value(ctx, 0, file_size, &verify_resp);
+	if (ret != EFEX_ERR_SUCCESS) {
+		printf("Raw image verification failed: %s\n", sunxi_efex_strerror(ret));
+	} else if (verify_resp.flag == EFEX_CRC32_VALID_FLAG) {
+		printf("Raw image download successful\n");
+	} else {
+		printf("Raw image verification status: 0x%02x\n", verify_resp.flag);
+	}
+
+	// Free allocated resources
+	free(buffer);
+	free(full_firmware_path);
+	
+	return ret;
+}
+
 int main(const int argc, char *argv[]) {
 	struct sunxi_efex_ctx_t ctx = {0};
 	int ret = 0;
 	const int erase_all = 1;
+	const int full_image = 1;
 
 	ret = sunxi_scan_usb_device(&ctx);
 	if (ret != EFEX_ERR_SUCCESS) {
@@ -642,6 +754,11 @@ int main(const int argc, char *argv[]) {
 
 	if (ctx.resp.mode == DEVICE_MODE_FEL) {
 		init_device_fes(&ctx, "fes1.fex", "u-boot-efex.fex");
+	}
+
+	if (full_image) {
+		ret = download_raw_image(&ctx, "rootfs.fex");
+		return ret;
 	}
 
 	// Open MBR file in main function
@@ -719,7 +836,6 @@ int main(const int argc, char *argv[]) {
 
 	sunxi_efex_fes_tool_mode(&ctx, TOOL_MODE_REBOOT, TOOL_MODE_REBOOT);
 
-	// Free USB resources before exiting
 	sunxi_usb_exit(&ctx);
 
 	return 0;
