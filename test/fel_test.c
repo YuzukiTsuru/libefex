@@ -68,7 +68,7 @@ int main() {
 	}
 
 	// Test payload readl/writel
-	sunxi_efex_fel_payloads_init(ARCH_RISCV32_E907);
+	sunxi_efex_fel_payloads_init(ARCH_RISCV);
 
 	uint32_t id[4] = {0};
 	int errors[4] = {0};

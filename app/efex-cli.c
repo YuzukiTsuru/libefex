@@ -79,15 +79,15 @@ static void hex_dump_region(const uint32_t base, const unsigned char *buf, const
 
 static enum sunxi_efex_fel_payloads_arch parse_arch(const char *s) {
 	if (!s)
-		return ARCH_RISCV32_E907; // default
+		return ARCH_RISCV; // default
 	if (strcmp(s, "arm") == 0)
 		return ARCH_ARM32;
 	if (strcmp(s, "aarch64") == 0)
 		return ARCH_AARCH64;
-	if (strcmp(s, "e907") == 0)
-		return ARCH_RISCV32_E907;
-	fprintf(stderr, "Unknown payload arch '%s', defaulting to e907\n", s);
-	return ARCH_RISCV32_E907;
+	if (strcmp(s, "riscv") == 0)
+		return ARCH_RISCV;
+	fprintf(stderr, "Unknown payload arch '%s', defaulting to riscv\n", s);
+	return ARCH_RISCV;
 }
 
 int main(const int argc, char **argv) {

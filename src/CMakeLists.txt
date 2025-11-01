@@ -1,6 +1,4 @@
-add_library(arch-obj OBJECT
-        arch/riscv32_e907/efex-payloads.c
-)
+add_subdirectory(arch)
 
 add_library(efex STATIC
         efex-common.c

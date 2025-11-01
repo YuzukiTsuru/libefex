@@ -7,12 +7,12 @@ extern "C" {
 #endif
 
 #include "compiler.h"
-#include "efex-usb.h"
 #include "efex-common.h"
 #include "efex-fel.h"
 #include "efex-fes.h"
 #include "efex-payloads.h"
 #include "efex-protocol.h"
+#include "efex-usb.h"
 
 #ifdef __cplusplus
 }

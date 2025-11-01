@@ -9,10 +9,14 @@
 #include "efex-protocol.h"
 
 
-extern struct payloads_ops riscv32_e907_ops;
+extern struct payloads_ops riscv_ops;
+extern struct payloads_ops aarch64_ops;
+extern struct payloads_ops arm_ops;
 
 static struct payloads_ops *payloads[] = {
-		&riscv32_e907_ops,
+		&aarch64_ops,
+		&arm_ops,
+		&riscv_ops,
 };
 
 static struct payloads_ops *current_payload;

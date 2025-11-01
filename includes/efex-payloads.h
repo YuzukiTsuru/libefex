@@ -15,7 +15,7 @@ extern "C" {
 enum sunxi_efex_fel_payloads_arch {
 	ARCH_ARM32,
 	ARCH_AARCH64,
-	ARCH_RISCV32_E907,
+	ARCH_RISCV,
 };
 
 /**
@@ -81,7 +81,7 @@ struct payloads_ops {
  * @param x The value to be byte-swapped.
  * @return The byte-swapped 32-bit value.
  */
-#define WARP_INST(x) (SWAB32((uint32_t) (x)))
+#define WARP_INST(x) (x)
 
 /**
  * @brief Initializes the payloads for the given architecture.
