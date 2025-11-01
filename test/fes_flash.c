@@ -525,7 +525,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 			goto cleanup;
 		}
 	} else {
-		printf("WARNING: File %s not found, using %llu zero-filled buffer\n", full_firmware_path, file_size);
+		printf("WARNING: File %s not found, using %lx zero-filled buffer\n", full_firmware_path, file_size);
 	}
 
 	// Allocate buffer for file content
@@ -542,7 +542,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	if (fp) {
 		const size_t bytes_read = fread(buffer, 1, file_size, fp);
 		if (bytes_read != (size_t) file_size) {
-			fprintf(stderr, "WARNING: Read %zu bytes, expected %llu bytes from %s\n",
+			fprintf(stderr, "WARNING: Read %zu bytes, expected %lx bytes from %s\n",
 			        bytes_read, file_size, full_firmware_path);
 			// Continue with whatever was read, buffer is already zero-filled
 		}
@@ -570,7 +570,7 @@ int download_firmware(const struct sunxi_efex_ctx_t *ctx, const char *firmware_f
 	}
 
 	// Download actual firmware data
-	printf("Downloading %llu bytes firmware %s to address 0x%016llx...\n",
+	printf("Downloading %lx bytes firmware %s to address 0x%016llx...\n",
 	       file_size, full_firmware_path, (unsigned long long) address);
 	ret = sunxi_efex_fes_down(ctx, buffer, (ssize_t) file_size, (uint32_t) address, 0);
 	if (ret != EFEX_ERR_SUCCESS) {
