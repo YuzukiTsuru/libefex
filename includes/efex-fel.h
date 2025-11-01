@@ -43,6 +43,35 @@ int sunxi_efex_fel_read(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, char 
  */
 int sunxi_efex_fel_write(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len);
 
+/**
+ * @brief Read a block of memory from the specified address.
+ *
+ * This function reads a block of memory from the specified address into the provided buffer.
+ *
+ * @param[in] ctx Pointer to the context structure.
+ * @param[in] addr The memory address from which data will be read.
+ * @param[out] buf Pointer to the buffer where the data will be stored.
+ * @param[in] len The number of bytes to read from the memory.
+ * @param[in] callback A callback function that will be called with the number of bytes read after each chunk is
+ */
+int sunxi_efex_fel_read_cb(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len,
+						   void (*callback)(ssize_t done));
+
+/**
+ * @brief Write a block of memory to the specified address.
+ *
+ * This function writes a block of memory to the specified address from the provided buffer.
+ *
+ * @param[in] ctx Pointer to the context structure.
+ * @param[in] addr The memory address to which data will be written.
+ * @param[in] buf Pointer to the buffer containing the data to be written.
+ * @param[in] len The number of bytes to write to the memory.
+ * @param[in] callback A callback function that will be called with the number of bytes written after each chunk is
+ * written.
+ */
+int sunxi_efex_fel_write_cb(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, const char *buf, ssize_t len,
+							void (*callback)(ssize_t done));
+
 #ifdef __cplusplus
 }
 #endif

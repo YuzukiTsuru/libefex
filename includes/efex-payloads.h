@@ -51,6 +51,7 @@ struct payloads_ops {
 	 *
 	 * @param ctx Pointer to the context structure containing relevant state.
 	 * @param addr Memory address from which the value is to be read.
+	 * @param val Placeholder for output parameter to store the read value.
 	 * @return The 32-bit value read from the specified address.
 	 */
 	int (*readl)(const struct sunxi_efex_ctx_t *ctx, uint32_t addr, uint32_t *val);

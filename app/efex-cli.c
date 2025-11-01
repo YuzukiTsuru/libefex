@@ -7,8 +7,9 @@
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
-
 #endif
+
+#include <sys/time.h>
 
 #include "efex-common.h"
 #include "efex-payloads.h"
@@ -16,19 +17,89 @@
 #include "efex-usb.h"
 #include "libefex.h"
 
+struct progress_t {
+	uint64_t total;
+	uint64_t done;
+	double start;
+};
+
+static struct progress_t *progress = NULL;
+
+static double gettime(void) {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec + (double) tv.tv_usec / 1000000.0;
+}
+
+static const char *format_eta(const double remaining) {
+	static char result[6] = "";
+	int seconds = remaining + 0.5;
+	if (seconds >= 0 && seconds < 6000) {
+		snprintf(result, sizeof(result), "%02d:%02d", seconds / 60, seconds % 60);
+		return result;
+	}
+	return "--:--";
+}
+
+static char *ssize(char *buf, double size) {
+	const char *unit[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+	int count = 0;
+
+	while ((size > 1024) && (count < 8)) {
+		size /= 1024;
+		count++;
+	}
+	sprintf(buf, "%5.3f %s", size, unit[count]);
+	return buf;
+}
+
+static void progress_start(const ssize_t total) {
+	if (progress && (total > 0)) {
+		progress->total = total;
+		progress->done = 0;
+		progress->start = gettime();
+	}
+}
+
+void progress_update(const ssize_t bytes) {
+	char buf1[32] = {0}, buf2[32] = {0};
+
+	if (progress) {
+		progress->done += bytes;
+		const double ratio = progress->total > 0 ? (double) progress->done / (double) progress->total : 0.0;
+		const double speed = (double) progress->done / (gettime() - progress->start);
+		const double eta = speed > 0 ? (progress->total - progress->done) / speed : 0;
+		const int pos = 48 * ratio;
+		printf("\r%3.0f%% [", ratio * 100);
+		for (int i = 0; i < pos; i++)
+			putchar('=');
+		for (int i = pos; i < 48; i++)
+			putchar(' ');
+		if (progress->done < progress->total)
+			printf("] %s/s, ETA %s        \r", ssize(buf1, speed), format_eta(eta));
+		else
+			printf("] %s, %s/s        \r", ssize(buf1, progress->done), ssize(buf2, speed));
+		fflush(stdout);
+	}
+}
+
+static void progress_stop() {
+	if (progress)
+		printf("\r\n");
+}
 
 static void print_usage(void) {
 	fprintf(stderr, "usage:\n"
-	        "    efex version                                        - Show chip version\n"
-	        "    efex hexdump <address> <length>                     - Dumps memory region in hex\n"
-	        "    efex dump <address> <length>                        - Binary memory dump to stdout\n"
-	        "    efex read32 <address>                               - Read 32-bits value from device memory\n"
-	        "    efex write32 <address> <value>                      - Write 32-bits value to device memory\n"
-	        "    efex read <address> <length> <file>                 - Read memory to file\n"
-	        "    efex write <address> <file>                         - Write file to memory\n"
-	        "    efex exec <address>                                 - Call function address\n"
-	        "[options]\n"
-	        "     -p payloads [arm, aarch64, e907]\n");
+					"    efex version                                        - Show chip version\n"
+					"    efex hexdump <address> <length>                     - Dumps memory region in hex\n"
+					"    efex dump <address> <length>                        - Binary memory dump to stdout\n"
+					"    efex read32 <address>                               - Read 32-bits value from device memory\n"
+					"    efex write32 <address> <value>                      - Write 32-bits value to device memory\n"
+					"    efex read <address> <length> <file>                 - Read memory to file\n"
+					"    efex write <address> <file>                         - Write file to memory\n"
+					"    efex exec <address>                                 - Call function address\n"
+					"[options]\n"
+					"     -p payloads [arm, aarch64, e907]\n");
 }
 
 static int parse_u32(const char *s, uint32_t *out) {
@@ -98,6 +169,12 @@ int main(const int argc, char **argv) {
 
 	// Option parsing: look for -p <arch>
 	enum sunxi_efex_fel_payloads_arch arch; // default
+	progress = (struct progress_t *) malloc(sizeof(struct progress_t));
+	if (!progress) {
+		fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(EFEX_ERR_MEMORY));
+		return 1;
+	}
+
 	int use_payloads = 0;
 	for (int i = 1; i < argc - 1; ++i) {
 		if (strcmp(argv[i], "-p") == 0) {
@@ -331,9 +408,11 @@ int main(const int argc, char **argv) {
 		}
 		size_t remaining = length;
 		uint32_t cur = addr;
+		progress_start(length);
 		while (remaining > 0) {
 			size_t n = remaining < chunk ? remaining : chunk;
-			// payloads版本只有readl/writel，没有read/write函数
+			progress_update(n);
+			// payloads version only has readl/writel, no read/write functions
 			ret = sunxi_efex_fel_read(&ctx, cur, (char *) buf, (ssize_t) n);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
@@ -346,6 +425,7 @@ int main(const int argc, char **argv) {
 			cur += (uint32_t) n;
 			remaining -= n;
 		}
+		progress_stop();
 		free(buf);
 		fclose(fp);
 	} else if (strcmp(cmd, "write") == 0) {
@@ -368,6 +448,16 @@ int main(const int argc, char **argv) {
 			exit_code = 1;
 			goto cleanup;
 		}
+		// Get file size
+		fseek(fp, 0, SEEK_END);
+		const long file_size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		if (file_size <= 0) {
+			fprintf(stderr, "ERROR: %s: '%s'\n", sunxi_efex_strerror(EFEX_ERR_FILE_SIZE), file);
+			fclose(fp);
+			exit_code = 1;
+			goto cleanup;
+		}
 		const size_t chunk = 65536;
 		unsigned char *buf = (unsigned char *) malloc(chunk);
 		if (!buf) {
@@ -378,8 +468,10 @@ int main(const int argc, char **argv) {
 		}
 		size_t offset = 0;
 		size_t nread;
+		progress_start(file_size);
 		while ((nread = fread(buf, 1, chunk, fp)) > 0) {
-			// payloads版本只有readl/writel，没有read/write函数
+			progress_update(nread);
+			// payloads version only has readl/writel, no read/write functions
 			ret = sunxi_efex_fel_write(&ctx, addr + (uint32_t) offset, (const char *) buf, (ssize_t) nread);
 			if (ret != EFEX_ERR_SUCCESS) {
 				fprintf(stderr, "ERROR: %s\n", sunxi_efex_strerror(ret));
@@ -390,6 +482,7 @@ int main(const int argc, char **argv) {
 			}
 			offset += nread;
 		}
+		progress_stop();
 		free(buf);
 		fclose(fp);
 	} else if (strcmp(cmd, "exec") == 0) {
@@ -419,5 +512,7 @@ int main(const int argc, char **argv) {
 
 cleanup:
 	sunxi_usb_exit(&ctx);
+	if (progress)
+		free(progress);
 	return exit_code;
 }
