@@ -7,9 +7,20 @@
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
-#endif
-
+#include <windows.h>
+#define gettimeofday(wp, tz)                                                                                           \
+	do {                                                                                                               \
+		SYSTEMTIME _tm;                                                                                                \
+		FILETIME _ft;                                                                                                  \
+		GetSystemTime(&_tm);                                                                                           \
+		SystemTimeToFileTime(&_tm, &_ft);                                                                              \
+		(wp)->tv_sec =                                                                                                 \
+				(long) ((_ft.dwLowDateTime | ((uint64_t) _ft.dwHighDateTime << 32)) / 10000000ULL - 11644473600ULL);   \
+		(wp)->tv_usec = (long) (_tm.wMilliseconds * 1000);                                                             \
+	} while (0)
+#else
 #include <sys/time.h>
+#endif
 
 #include "efex-common.h"
 #include "efex-payloads.h"
