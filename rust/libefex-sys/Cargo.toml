@@ -1,0 +1,18 @@
+[package]
+name = "libefex-sys"
+version = "0.1.0"
+authors = ["YuzukiTsuru"]
+description = "FFI bindings for libefex"
+license = "MIT"
+edition = "2025"
+links = "efex"
+
+[lib]
+name = "libefex_sys"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+cc = "1.0"
+pkg-config = "0.3"

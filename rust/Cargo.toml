@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "libefex-sys",
+    "libefex",
+    "efex-cli",
+]

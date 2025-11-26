@@ -1,0 +1,12 @@
+[package]
+name = "efex-cli"
+version = "0.1.0"
+authors = ["YuzukiTsuru"]
+description = "Rust version of efex-cli tool"
+license = "MIT"
+edition = "2025"
+
+[dependencies]
+libefex = { path = "../libefex" }
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
