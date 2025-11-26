@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["YuzukiTsuru"]
 description = "FFI bindings for libefex"
 license = "MIT"
-edition = "2025"
+edition = "2021"
 links = "efex"
 
 [lib]

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["YuzukiTsuru"]
 description = "Rust version of efex-cli tool"
 license = "MIT"
-edition = "2025"
+edition = "2021"
 
 [dependencies]
 libefex = { path = "../libefex" }
