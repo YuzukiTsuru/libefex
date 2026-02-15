@@ -389,7 +389,7 @@ impl Context {
 
     /// Verify value
     pub fn fes_verify_value(&self, addr: u32, size: u64) -> Result<FesVerifyResp, EfexError> {
-        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
         let result = unsafe { sunxi_efex_fes_verify_value(self.as_ptr(), addr, size, &resp) };
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
@@ -399,7 +399,7 @@ impl Context {
 
     /// Verify status
     pub fn fes_verify_status(&self, tag: u32) -> Result<FesVerifyResp, EfexError> {
-        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
         let result = unsafe { sunxi_efex_fes_verify_status(self.as_ptr(), tag, &resp) };
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
@@ -409,7 +409,7 @@ impl Context {
 
     /// Verify U-Boot block
     pub fn fes_verify_uboot_blk(&self, tag: u32) -> Result<FesVerifyResp, EfexError> {
-        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
         let result = unsafe { sunxi_efex_fes_verify_uboot_blk(self.as_ptr(), tag, &resp) };
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
