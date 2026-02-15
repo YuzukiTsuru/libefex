@@ -7,13 +7,13 @@
 #include "efex-protocol.h"
 #include "efex-usb.h"
 #include "ending.h"
+#include "usb_layer.h"
 
 #ifdef _WIN32
 #include <SetupAPI.h>
 #include <initguid.h>
 #include <usbiodef.h>
 #include <windows.h>
-
 
 static int match_vid_pid(const char *device_path) {
 	if (!device_path)
@@ -36,7 +36,7 @@ static int match_vid_pid(const char *device_path) {
 	return found;
 }
 
-int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
+static int winusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) {
 	if (!handle || !buf || len <= 0) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -65,7 +65,7 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 	return EFEX_ERR_SUCCESS;
 }
 
-int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len) {
+static int winusb_bulk_recv(void *handle, int ep, char *buf, const ssize_t len) {
 	if (!handle || !buf || len <= 0) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -87,7 +87,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, const ssize_t len
 	return EFEX_ERR_SUCCESS;
 }
 
-int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
+static int winusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -113,7 +113,6 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 
 		if (result) {
 			DWORD required_size = 0;
-			// First call to get required buffer size
 			SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, NULL, 0, &required_size, NULL);
 			if (required_size == 0) {
 				index++;
@@ -153,7 +152,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 	return device_found ? EFEX_ERR_SUCCESS : EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
-int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
+static int winusb_init(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx || !ctx->dev_name) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -168,17 +167,15 @@ int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
 	return EFEX_ERR_SUCCESS;
 }
 
-int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
+static int winusb_exit(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
 
-	/* Release device handle */
 	if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {
 		CloseHandle((HANDLE) ctx->hdl);
 		ctx->hdl = NULL;
 	}
-	/* Free device name memory */
 	if (ctx->dev_name != NULL) {
 		free(ctx->dev_name);
 		ctx->dev_name = NULL;
@@ -186,5 +183,13 @@ int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
 
 	return EFEX_ERR_SUCCESS;
 }
+
+const struct usb_backend_ops usb_winusb_ops = {
+	.bulk_send = winusb_bulk_send,
+	.bulk_recv = winusb_bulk_recv,
+	.scan_device = winusb_scan_device,
+	.init = winusb_init,
+	.exit = winusb_exit,
+};
 
 #endif // _WIN32

@@ -278,6 +278,15 @@ pub enum sunxi_efex_fel_payloads_arch {
     ARCH_RISCV = 2,
 }
 
+// USB backend type enumeration
+#[repr(C)]
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum usb_backend_type {
+    USB_BACKEND_AUTO = 0,
+    USB_BACKEND_LIBUSB = 1,
+    USB_BACKEND_WINUSB = 2,
+}
+
 // Declare C functions
 extern "C" {
     // Common functions
@@ -454,4 +463,9 @@ extern "C" {
         val: u32,
         addr: u32,
     ) -> c_int;
+
+    // USB backend functions
+    pub fn sunxi_efex_set_usb_backend(backend: usb_backend_type) -> c_int;
+
+    pub fn sunxi_efex_get_usb_backend() -> usb_backend_type;
 }

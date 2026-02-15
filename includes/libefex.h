@@ -13,6 +13,7 @@ extern "C" {
 #include "efex-payloads.h"
 #include "efex-protocol.h"
 #include "efex-usb.h"
+#include "usb_layer.h"
 
 #ifdef __cplusplus
 }

@@ -11,9 +11,9 @@
 #include "efex-protocol.h"
 #include "efex-usb.h"
 #include "ending.h"
+#include "usb_layer.h"
 
-
-int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len) {
+static int libusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) {
 	if (!handle || !buf || len <= 0) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -37,7 +37,7 @@ int sunxi_usb_bulk_send(void *handle, const int ep, const char *buf, ssize_t len
 	return EFEX_ERR_SUCCESS;
 }
 
-int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, ssize_t len) {
+static int libusb_bulk_recv(void *handle, int ep, char *buf, ssize_t len) {
 	if (!handle || !buf || len <= 0) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -59,7 +59,7 @@ int sunxi_usb_bulk_recv(void *handle, const int ep, char *buf, ssize_t len) {
 	return EFEX_ERR_SUCCESS;
 }
 
-int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
+static int libusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -69,6 +69,7 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 	int device_found = 0;
 
 	libusb_init(&context);
+	ctx->usb_context = context;
 	const size_t count = libusb_get_device_list(context, &list);
 	for (size_t i = 0; i < count; i++) {
 		libusb_device *device = list[i];
@@ -77,21 +78,19 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 			return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 		}
 		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
-			// Cast to correct type for libusb_open
 			libusb_device_handle *libusb_hdl = NULL;
 			if (libusb_open(device, &libusb_hdl) != 0) {
 				fprintf(stderr, "ERROR: Can't connect to device\r\n");
 				return EFEX_ERR_USB_INIT;
 			}
-			ctx->hdl = libusb_hdl; // Assign to void* after successful open
+			ctx->hdl = libusb_hdl;
 			return EFEX_ERR_SUCCESS;
 		}
 	}
 	return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
-
-int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
+static int libusb_backend_init(struct sunxi_efex_ctx_t *ctx) {
 	if (ctx && ctx->hdl) {
 		libusb_device_handle *libusb_hdl = (libusb_device_handle *) ctx->hdl;
 		struct libusb_config_descriptor *config;
@@ -124,7 +123,7 @@ int sunxi_usb_init(struct sunxi_efex_ctx_t *ctx) {
 	return EFEX_ERR_USB_INIT;
 }
 
-int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
+static int libusb_backend_exit(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
@@ -143,3 +142,11 @@ int sunxi_usb_exit(struct sunxi_efex_ctx_t *ctx) {
 
 	return EFEX_ERR_SUCCESS;
 }
+
+const struct usb_backend_ops usb_libusb_ops = {
+	.bulk_send = libusb_bulk_send,
+	.bulk_recv = libusb_bulk_recv,
+	.scan_device = libusb_scan_device,
+	.init = libusb_backend_init,
+	.exit = libusb_backend_exit,
+};

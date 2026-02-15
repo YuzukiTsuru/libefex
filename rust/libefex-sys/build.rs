@@ -32,16 +32,16 @@ fn main() {
         src_dir.join("efex-fes.c"),
         src_dir.join("efex-payloads.c"),
         src_dir.join("efex-usb.c"),
+        src_dir.join("usb").join("usb_layer.c"),
+        src_dir.join("usb").join("usb_layer_libusb.c"),
         src_dir.join("arch").join("aarch64.c"),
         src_dir.join("arch").join("arm.c"),
         src_dir.join("arch").join("riscv.c"),
     ];
 
-    // Add USB layer based on platform
+    // Add winusb backend on Windows
     if cfg!(target_os = "windows") {
-        c_files.push(src_dir.join("usb").join("winusb_layer.c"));
-    } else {
-        c_files.push(src_dir.join("usb").join("libusb_layer.c"));
+        c_files.push(src_dir.join("usb").join("usb_layer_winusb.c"));
     }
 
     // Compile C code
@@ -57,7 +57,7 @@ fn main() {
             .define("_CRT_SECURE_NO_WARNINGS", None)
             .warnings(false);
 
-        // Link libusb on Windows platform
+        // Link libusb on Windows platform (for libusb backend support)
         let libusb_lib_dir = root_dir
             .join("lib")
             .join("libusb")

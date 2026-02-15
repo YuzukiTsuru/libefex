@@ -6,21 +6,18 @@ add_library(efex STATIC
         efex-fes.c
         efex-payloads.c
         efex-usb.c
+        usb/usb_layer.c
+        usb/usb_layer_libusb.c
 
         $<TARGET_OBJECTS:arch-obj>
 )
 
-if(WIN32 AND USE_WINUSB)
+if(WIN32)
     target_sources(efex PRIVATE
-        usb/winusb_layer.c
+        usb/usb_layer_winusb.c
     )
-    if(USE_WINUSB)
-        target_link_libraries(efex PRIVATE SetupAPI.lib)
-    endif()
-    message(STATUS "Building with winusb support")
+    target_link_libraries(efex PRIVATE SetupAPI.lib)
+    message(STATUS "Building with winusb and libusb support")
 else()
-    target_sources(efex PRIVATE
-        usb/libusb_layer.c
-    )
     message(STATUS "Building with libusb support")
 endif()

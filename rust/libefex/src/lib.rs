@@ -173,6 +173,21 @@ impl Context {
         }
     }
 
+    /// Set USB backend type (static method)
+    pub fn set_usb_backend_static(backend: UsbBackend) -> Result<(), EfexError> {
+        let result = unsafe { libefex_sys::sunxi_efex_set_usb_backend(rust_usb_backend_to_c(backend)) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Get current USB backend type (static method)
+    pub fn get_usb_backend_static() -> UsbBackend {
+        let backend = unsafe { libefex_sys::sunxi_efex_get_usb_backend() };
+        c_usb_backend_to_rust(backend)
+    }
+
     /// Scan USB devices
     pub fn scan_usb_device(&mut self) -> Result<(), EfexError> {
         let result = unsafe { sunxi_scan_usb_device(&mut self.ctx) };
@@ -437,6 +452,35 @@ pub enum PayloadArch {
     Aarch64,
     /// RISC-V architecture
     Riscv,
+}
+
+/// USB backend type enumeration
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum UsbBackend {
+    /// Auto select (Windows default winusb, Linux libusb)
+    Auto,
+    /// Force use libusb
+    Libusb,
+    /// Force use winusb (Windows only)
+    Winusb,
+}
+
+/// Convert Rust USB backend to C USB backend
+fn rust_usb_backend_to_c(backend: UsbBackend) -> libefex_sys::usb_backend_type {
+    match backend {
+        UsbBackend::Auto => libefex_sys::usb_backend_type::USB_BACKEND_AUTO,
+        UsbBackend::Libusb => libefex_sys::usb_backend_type::USB_BACKEND_LIBUSB,
+        UsbBackend::Winusb => libefex_sys::usb_backend_type::USB_BACKEND_WINUSB,
+    }
+}
+
+/// Convert C USB backend to Rust USB backend
+fn c_usb_backend_to_rust(backend: libefex_sys::usb_backend_type) -> UsbBackend {
+    match backend {
+        libefex_sys::usb_backend_type::USB_BACKEND_AUTO => UsbBackend::Auto,
+        libefex_sys::usb_backend_type::USB_BACKEND_LIBUSB => UsbBackend::Libusb,
+        libefex_sys::usb_backend_type::USB_BACKEND_WINUSB => UsbBackend::Winusb,
+    }
 }
 
 /// FES data type enumeration
