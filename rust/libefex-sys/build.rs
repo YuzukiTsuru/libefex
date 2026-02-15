@@ -35,25 +35,28 @@ fn main() {
         src_dir.join("arch").join("aarch64.c"),
         src_dir.join("arch").join("arm.c"),
         src_dir.join("arch").join("riscv.c"),
-        src_dir.join("usb").join("libusb_layer.c"),
     ];
 
-    // Add winusb_layer.c based on platform
+    // Add USB layer based on platform
     if cfg!(target_os = "windows") {
         c_files.push(src_dir.join("usb").join("winusb_layer.c"));
+    } else {
+        c_files.push(src_dir.join("usb").join("libusb_layer.c"));
     }
 
     // Compile C code
     let mut builder = cc::Build::new();
-    builder
-        .include(include_dir)
-        .include(libusb_include_dir)
-        .files(c_files)
-        .define("_CRT_SECURE_NO_WARNINGS", None) // Windows-specific warning suppression
-        .warnings(false); // Suppress warnings for C code
 
-    // Add libusb library
+    // Platform-specific configuration
     if cfg!(target_os = "windows") {
+        // Windows-specific configuration
+        builder
+            .include(include_dir)
+            .include(libusb_include_dir)
+            .files(c_files)
+            .define("_CRT_SECURE_NO_WARNINGS", None)
+            .warnings(false);
+
         // Link libusb on Windows platform
         let libusb_lib_dir = root_dir
             .join("lib")
@@ -67,8 +70,14 @@ fn main() {
         println!("cargo:rustc-link-lib=kernel32");
         println!("cargo:rustc-link-lib=advapi32");
         println!("cargo:rustc-link-lib=shell32");
-        println!("cargo:rustc-link-lib=setupapi"); // Add setupapi library
+        println!("cargo:rustc-link-lib=setupapi");
     } else {
+        // Linux/macOS configuration
+        builder
+            .include(include_dir)
+            .files(c_files)
+            .warnings(false);
+
         // Use pkg-config to find libusb on Linux/macOS platforms
         pkg_config::Config::new()
             .probe("libusb-1.0")

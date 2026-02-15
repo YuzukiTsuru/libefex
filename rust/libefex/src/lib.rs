@@ -324,6 +324,98 @@ impl Context {
         }
         Ok(())
     }
+
+    /// Get chip ID
+    pub fn fes_get_chipid(&self) -> Result<String, EfexError> {
+        let mut chip_id: Vec<u8> = vec![0; 64];
+        let result = unsafe {
+            sunxi_efex_fes_get_chipid(self.as_ptr(), chip_id.as_mut_ptr() as *mut c_char)
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        let c_str = unsafe { CStr::from_ptr(chip_id.as_ptr() as *const c_char) };
+        Ok(c_str.to_str().unwrap_or("").to_string())
+    }
+
+    /// Download data to device
+    pub fn fes_down(&self, buf: &[u8], addr: u32, data_type: FesDataType) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_down(
+                self.as_ptr(),
+                buf.as_ptr() as *const c_char,
+                buf.len() as c_int,
+                addr,
+                rust_fes_data_type_to_c(data_type),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Upload data from device
+    pub fn fes_up(&self, buf: &mut [u8], addr: u32, data_type: FesDataType) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_up(
+                self.as_ptr(),
+                buf.as_mut_ptr() as *const c_char,
+                buf.len() as c_int,
+                addr,
+                rust_fes_data_type_to_c(data_type),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Verify value
+    pub fn fes_verify_value(&self, addr: u32, size: u64) -> Result<FesVerifyResp, EfexError> {
+        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let result = unsafe { sunxi_efex_fes_verify_value(self.as_ptr(), addr, size, &resp) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(c_fes_verify_resp_to_rust(&resp))
+    }
+
+    /// Verify status
+    pub fn fes_verify_status(&self, tag: u32) -> Result<FesVerifyResp, EfexError> {
+        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let result = unsafe { sunxi_efex_fes_verify_status(self.as_ptr(), tag, &resp) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(c_fes_verify_resp_to_rust(&resp))
+    }
+
+    /// Verify U-Boot block
+    pub fn fes_verify_uboot_blk(&self, tag: u32) -> Result<FesVerifyResp, EfexError> {
+        let mut resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
+        let result = unsafe { sunxi_efex_fes_verify_uboot_blk(self.as_ptr(), tag, &resp) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(c_fes_verify_resp_to_rust(&resp))
+    }
+
+    /// Set tool mode
+    pub fn fes_tool_mode(&self, tool_mode: FesToolMode, next_mode: FesToolMode) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_tool_mode(
+                self.as_ptr(),
+                rust_fes_tool_mode_to_c(tool_mode),
+                rust_fes_tool_mode_to_c(next_mode),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
 }
 
 /// Implement Drop trait to automatically release resources
@@ -345,6 +437,87 @@ pub enum PayloadArch {
     Aarch64,
     /// RISC-V architecture
     Riscv,
+}
+
+/// FES data type enumeration
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FesDataType {
+    /// No tag
+    None,
+    /// DRAM configuration data tag
+    Dram,
+    /// MBR partition table tag
+    Mbr,
+    /// BOOT1 tag
+    Boot1,
+    /// BOOT0 tag
+    Boot0,
+    /// Erase command tag
+    Erase,
+    /// Full image size tag
+    FullImgSize,
+    /// EXT4/UBIFS file system tag
+    Ext4Ubifs,
+    /// FLASH operation tag
+    Flash,
+}
+
+/// Convert Rust FES data type to C FES data type
+fn rust_fes_data_type_to_c(data_type: FesDataType) -> sunxi_fes_data_type_t {
+    match data_type {
+        FesDataType::None => sunxi_fes_data_type_t::SUNXI_EFEX_TAG_NONE,
+        FesDataType::Dram => sunxi_fes_data_type_t::SUNXI_EFEX_DRAM_TAG,
+        FesDataType::Mbr => sunxi_fes_data_type_t::SUNXI_EFEX_MBR_TAG,
+        FesDataType::Boot1 => sunxi_fes_data_type_t::SUNXI_EFEX_BOOT1_TAG,
+        FesDataType::Boot0 => sunxi_fes_data_type_t::SUNXI_EFEX_BOOT0_TAG,
+        FesDataType::Erase => sunxi_fes_data_type_t::SUNXI_EFEX_ERASE_TAG,
+        FesDataType::FullImgSize => sunxi_fes_data_type_t::SUNXI_EFEX_FULLIMG_SIZE_TAG,
+        FesDataType::Ext4Ubifs => sunxi_fes_data_type_t::SUNXI_EFEX_EXT4_UBIFS_TAG,
+        FesDataType::Flash => sunxi_fes_data_type_t::SUNXI_EFEX_FLASH_TAG,
+    }
+}
+
+/// FES tool mode enumeration
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FesToolMode {
+    /// Normal mode
+    Normal,
+    /// Reboot mode
+    Reboot,
+    /// Power off mode
+    PowerOff,
+    /// Re-update mode
+    Reupdate,
+    /// Boot mode
+    Boot,
+}
+
+/// Convert Rust FES tool mode to C FES tool mode
+fn rust_fes_tool_mode_to_c(tool_mode: FesToolMode) -> sunxi_fes_tool_mode_t {
+    match tool_mode {
+        FesToolMode::Normal => sunxi_fes_tool_mode_t::TOOL_MODE_NORMAL,
+        FesToolMode::Reboot => sunxi_fes_tool_mode_t::TOOL_MODE_REBOOT,
+        FesToolMode::PowerOff => sunxi_fes_tool_mode_t::TOOL_MODE_POWEROFF,
+        FesToolMode::Reupdate => sunxi_fes_tool_mode_t::TOOL_MODE_REUPDATE,
+        FesToolMode::Boot => sunxi_fes_tool_mode_t::TOOL_MODE_BOOT,
+    }
+}
+
+/// FES verify response structure
+#[derive(Debug, Clone)]
+pub struct FesVerifyResp {
+    pub flag: u32,
+    pub fes_crc: i32,
+    pub media_crc: i32,
+}
+
+/// Convert C FES verify response to Rust
+fn c_fes_verify_resp_to_rust(resp: &sunxi_fes_verify_resp_t) -> FesVerifyResp {
+    FesVerifyResp {
+        flag: resp.flag,
+        fes_crc: resp.fes_crc,
+        media_crc: resp.media_crc,
+    }
 }
 
 /// Convert Rust architecture to C architecture
