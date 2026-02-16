@@ -175,7 +175,8 @@ impl Context {
 
     /// Set USB backend type (static method)
     pub fn set_usb_backend_static(backend: UsbBackend) -> Result<(), EfexError> {
-        let result = unsafe { libefex_sys::sunxi_efex_set_usb_backend(rust_usb_backend_to_c(backend)) };
+        let result =
+            unsafe { libefex_sys::sunxi_efex_set_usb_backend(rust_usb_backend_to_c(backend)) };
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
         }
@@ -371,7 +372,12 @@ impl Context {
     }
 
     /// Upload data from device
-    pub fn fes_up(&self, buf: &mut [u8], addr: u32, data_type: FesDataType) -> Result<(), EfexError> {
+    pub fn fes_up(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+    ) -> Result<(), EfexError> {
         let result = unsafe {
             sunxi_efex_fes_up(
                 self.as_ptr(),
@@ -418,7 +424,11 @@ impl Context {
     }
 
     /// Set tool mode
-    pub fn fes_tool_mode(&self, tool_mode: FesToolMode, next_mode: FesToolMode) -> Result<(), EfexError> {
+    pub fn fes_tool_mode(
+        &self,
+        tool_mode: FesToolMode,
+        next_mode: FesToolMode,
+    ) -> Result<(), EfexError> {
         let result = unsafe {
             sunxi_efex_fes_tool_mode(
                 self.as_ptr(),

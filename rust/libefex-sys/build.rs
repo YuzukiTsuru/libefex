@@ -72,9 +72,10 @@ fn main() {
 
         // Link libusb on Windows platform (for libusb backend support)
         // Determine toolchain and architecture
-        let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "x86_64".to_string());
+        let target_arch =
+            env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "x86_64".to_string());
         let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_else(|_| "msvc".to_string());
-        
+
         let libusb_lib_dir = if target_env == "msvc" {
             // MSVC toolchain
             let libusb_dir = root_dir.join("lib").join("libusb");
@@ -82,11 +83,12 @@ fn main() {
                 println!("cargo:warning=No VS version found, defaulting to VS2022");
                 "VS2022".to_string()
             });
-            let arch_dir = if target_arch == "x86_64" { "MS64" } else { "MS32" };
-            libusb_dir
-                .join(vs_version)
-                .join(arch_dir)
-                .join("dll")
+            let arch_dir = if target_arch == "x86_64" {
+                "MS64"
+            } else {
+                "MS32"
+            };
+            libusb_dir.join(vs_version).join(arch_dir).join("dll")
         } else {
             // MinGW toolchain
             let arch_dir = match target_arch.as_str() {
@@ -101,10 +103,13 @@ fn main() {
                 .join(arch_dir)
                 .join("dll")
         };
-        
-        println!("cargo:warning=Target arch: {}, env: {}", target_arch, target_env);
+
+        println!(
+            "cargo:warning=Target arch: {}, env: {}",
+            target_arch, target_env
+        );
         println!("cargo:warning=LibUSB lib dir: {:?}", libusb_lib_dir);
-        
+
         println!("cargo:rustc-link-search={}", libusb_lib_dir.display());
         println!("cargo:rustc-link-lib=dylib=libusb-1.0");
         println!("cargo:rustc-link-lib=user32");
@@ -124,10 +129,10 @@ fn main() {
         // Copy libusb DLL to output directory
         let dll_name = "libusb-1.0.dll";
         let src_dll = libusb_lib_dir.join(dll_name);
-        
+
         println!("cargo:warning=Source DLL path: {:?}", src_dll);
         println!("cargo:warning=Source DLL exists: {}", src_dll.exists());
-        
+
         // Get the output directory where the DLL should be copied
         let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
         let target_dir = out_dir
@@ -135,16 +140,19 @@ fn main() {
             .nth(3)
             .expect("Failed to find target directory");
         let dest_dll = target_dir.join(dll_name);
-        
+
         println!("cargo:warning=Target DLL path: {:?}", dest_dll);
-        
+
         // Create target directory if it doesn't exist
         if let Some(dest_dir) = dest_dll.parent() {
             fs::create_dir_all(dest_dir).unwrap_or_else(|e| {
-                println!("cargo:warning=Failed to create directory {:?}: {}", dest_dir, e);
+                println!(
+                    "cargo:warning=Failed to create directory {:?}: {}",
+                    dest_dir, e
+                );
             });
         }
-        
+
         // Copy the DLL
         if src_dll.exists() {
             match fs::copy(&src_dll, &dest_dll) {
@@ -156,16 +164,13 @@ fn main() {
         }
     } else {
         // Linux/macOS configuration
-        builder
-            .include(include_dir)
-            .files(c_files)
-            .warnings(false);
+        builder.include(include_dir).files(c_files).warnings(false);
 
         // Use pkg-config to find libusb on Linux/macOS platforms
         let libusb = pkg_config::Config::new()
             .probe("libusb-1.0")
             .expect("Failed to find libusb-1.0");
-        
+
         // Add libusb include paths from pkg-config
         for include in libusb.include_paths {
             builder.include(include);
