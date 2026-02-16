@@ -162,9 +162,14 @@ fn main() {
             .warnings(false);
 
         // Use pkg-config to find libusb on Linux/macOS platforms
-        pkg_config::Config::new()
+        let libusb = pkg_config::Config::new()
             .probe("libusb-1.0")
             .expect("Failed to find libusb-1.0");
+        
+        // Add libusb include paths from pkg-config
+        for include in libusb.include_paths {
+            builder.include(include);
+        }
     }
 
     builder.compile("efex");
