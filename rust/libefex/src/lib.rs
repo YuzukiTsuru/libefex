@@ -371,6 +371,79 @@ impl Context {
         Ok(())
     }
 
+    /// Download data to device with progress callback
+    /// This is an optimized version that reuses the context for multiple transfers
+    pub fn fes_down_batch<F>(
+        &self,
+        buf: &[u8],
+        addr: u32,
+        data_type: FesDataType,
+        mut progress_callback: F,
+    ) -> Result<(), EfexError>
+    where
+        F: FnMut(usize, usize),
+    {
+        const EFEX_CODE_MAX_SIZE: usize = 64 * 1024;
+
+        if buf.is_empty() {
+            return Err(EfexError::InvalidParam);
+        }
+
+        let total_len = buf.len();
+        let mut remain_data = total_len;
+        let mut buff_ptr = buf.as_ptr();
+        let mut addr_cur = addr;
+        let mut written: usize = 0;
+
+        let data_type_raw = rust_fes_data_type_to_c(data_type) as u32;
+        let is_data_type = data_type_raw & (libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32) != 0;
+
+        while remain_data > 0 {
+            let length = if remain_data > EFEX_CODE_MAX_SIZE {
+                EFEX_CODE_MAX_SIZE
+            } else {
+                remain_data
+            };
+            remain_data -= length;
+
+            let mut current_flags = data_type_raw;
+
+            if remain_data == 0 {
+                current_flags |= libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_TRANS_FINISH_TAG as u32;
+            }
+
+            let trans = libefex_sys::sunxi_fes_trans_t {
+                addr: addr_cur,
+                len: length as u32,
+                flags: current_flags,
+            };
+
+            let result = unsafe {
+                libefex_sys::sunxi_usb_fes_xfer(
+                    self.as_ptr(),
+                    libefex_sys::sunxi_usb_fes_xfer_type_t::FES_XFER_SEND,
+                    libefex_sys::sunxi_efex_cmd_t::EFEX_CMD_FES_DOWN as u32,
+                    &trans as *const _ as *const c_char,
+                    std::mem::size_of::<libefex_sys::sunxi_fes_trans_t>() as isize,
+                    buff_ptr as *const c_char,
+                    length as isize,
+                )
+            };
+
+            if result != EFEX_ERR_SUCCESS {
+                return Err(c_error_to_rust(result));
+            }
+
+            addr_cur += if is_data_type { length as u32 } else { (length / 512) as u32 };
+            buff_ptr = unsafe { buff_ptr.add(length) };
+            written += length;
+
+            progress_callback(written, total_len);
+        }
+
+        Ok(())
+    }
+
     /// Upload data from device
     pub fn fes_up(
         &self,

@@ -345,9 +345,9 @@ extern "C" {
         typ: sunxi_usb_fes_xfer_type_t,
         cmd: u32,
         request_buf: *const c_char,
-        request_len: c_int,
+        request_len: isize,
         buf: *const c_char,
-        len: c_int,
+        len: isize,
     ) -> c_int;
 
     // FEL =====
