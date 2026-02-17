@@ -399,7 +399,9 @@ impl Context {
         let mut written: usize = 0;
 
         let data_type_raw = rust_fes_data_type_to_c(data_type) as u32;
-        let is_data_type = data_type_raw & (libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32) != 0;
+        let is_data_type = data_type_raw
+            & (libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32)
+            != 0;
 
         while remain_data > 0 {
             let length = if remain_data > EFEX_CODE_MAX_SIZE {
@@ -412,7 +414,8 @@ impl Context {
             let mut current_flags = data_type_raw;
 
             if remain_data == 0 {
-                current_flags |= libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_TRANS_FINISH_TAG as u32;
+                current_flags |=
+                    libefex_sys::sunxi_fes_data_type_t::SUNXI_EFEX_TRANS_FINISH_TAG as u32;
             }
 
             let trans = libefex_sys::sunxi_fes_trans_t {
@@ -437,7 +440,11 @@ impl Context {
                 return Err(c_error_to_rust(result));
             }
 
-            addr_cur += if is_data_type { length as u32 } else { (length / 512) as u32 };
+            addr_cur += if is_data_type {
+                length as u32
+            } else {
+                (length / 512) as u32
+            };
             buff_ptr = unsafe { buff_ptr.add(length) };
             written += length;
 
