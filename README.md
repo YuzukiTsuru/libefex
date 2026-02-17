@@ -1,10 +1,10 @@
 # libefex
 
-libefex is a cross-platform library for interacting with Allwinner chips in both FEL and FES modes. FEL is a low-level subroutine contained in the BootROM on Allwinner devices used for initial programming and recovery. FES mode is another BootROM subroutine used for more advanced flash operations.
+libefex is a cross-platform library for interacting with Sunxi chips in both FEL and FES modes. FEL is a low-level subroutine contained in the BootROM on Sunxi devices used for initial programming and recovery. FES mode is another BootROM subroutine used for more advanced flash operations.
 
 ## Features
 
-- Scan and connect to Allwinner devices in FEL and FES modes
+- Scan and connect to Sunxi devices in FEL and FES modes
 - Read and write device memory
 - Execute code in device memory
 - Flash programming and management
