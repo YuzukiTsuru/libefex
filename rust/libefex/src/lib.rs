@@ -7,6 +7,9 @@ use thiserror::Error;
 /// Success error code
 const EFEX_ERR_SUCCESS: i32 = 0;
 
+/// Maximum size of EFEX code xfer
+const EFEX_CODE_MAX_SIZE: usize = 64 * 1024;
+
 /// Error type definition
 #[derive(Error, Debug)]
 pub enum EfexError {
@@ -513,6 +516,123 @@ impl Context {
             return Err(c_error_to_rust(result));
         }
         Ok(())
+    }
+
+    fn fes_up_down_with_progress<F>(
+        &self,
+        buf: *mut u8,
+        len: usize,
+        addr: u32,
+        data_type: FesDataType,
+        cmd: sunxi_efex_cmd_t,
+        mut progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        let total_len = len as u64;
+        let mut remain_data = len as u32;
+        let mut buff_ptr = buf;
+        let mut addr_cur = addr;
+        let mut transferred: u64 = 0;
+
+        let base_type = rust_fes_data_type_to_c(data_type) as u32;
+        let is_data_type =
+            (base_type & sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32) != 0;
+        let mut current_type = base_type;
+
+        let xfer_type = if cmd == sunxi_efex_cmd_t::EFEX_CMD_FES_DOWN {
+            sunxi_usb_fes_xfer_type_t::FES_XFER_SEND
+        } else {
+            sunxi_usb_fes_xfer_type_t::FES_XFER_RECV
+        };
+
+        while remain_data > 0 {
+            let length = if remain_data > EFEX_CODE_MAX_SIZE as u32 {
+                EFEX_CODE_MAX_SIZE as u32
+            } else {
+                remain_data
+            };
+            remain_data -= length;
+
+            if remain_data == 0 {
+                current_type |= sunxi_fes_data_type_t::SUNXI_EFEX_TRANS_FINISH_TAG as u32;
+            }
+
+            let trans = sunxi_fes_trans_t {
+                addr: addr_cur,
+                len: length,
+                flags: current_type,
+            };
+
+            let result = unsafe {
+                sunxi_usb_fes_xfer(
+                    self.as_ptr(),
+                    xfer_type,
+                    cmd as u32,
+                    &trans as *const _ as *const c_char,
+                    std::mem::size_of::<sunxi_fes_trans_t>() as c_int,
+                    buff_ptr as *const c_char,
+                    length as c_int,
+                )
+            };
+
+            if result != EFEX_ERR_SUCCESS {
+                return Err(c_error_to_rust(result));
+            }
+
+            addr_cur += if is_data_type { length } else { length / 512 };
+            buff_ptr = unsafe { buff_ptr.add(length as usize) };
+            transferred += length as u64;
+
+            progress_callback(transferred, total_len);
+        }
+
+        Ok(transferred)
+    }
+
+    /// Download data to device with progress callback
+    /// Each callback is invoked after every EFEX_CODE_MAX_SIZE (64KB) transfer
+    pub fn fes_down_with_progress<F>(
+        &self,
+        buf: &[u8],
+        addr: u32,
+        data_type: FesDataType,
+        progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        self.fes_up_down_with_progress(
+            buf.as_ptr() as *mut u8,
+            buf.len(),
+            addr,
+            data_type,
+            sunxi_efex_cmd_t::EFEX_CMD_FES_DOWN,
+            progress_callback,
+        )
+    }
+
+    /// Upload data from device with progress callback
+    /// Each callback is invoked after every EFEX_CODE_MAX_SIZE (64KB) transfer
+    pub fn fes_up_with_progress<F>(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+        progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        self.fes_up_down_with_progress(
+            buf.as_mut_ptr(),
+            buf.len(),
+            addr,
+            data_type,
+            sunxi_efex_cmd_t::EFEX_CMD_FES_UP,
+            progress_callback,
+        )
     }
 }
 

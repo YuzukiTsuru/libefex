@@ -50,6 +50,7 @@ pub enum sunxi_efex_error_t {
 
 // Command type enumeration
 #[repr(C)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum sunxi_efex_cmd_t {
     // Common Commands
     EFEX_CMD_VERIFY_DEVICE = 0x0001,
@@ -239,6 +240,7 @@ pub enum sunxi_efex_usb_request_t {
 
 // USB FES transfer type enumeration
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub enum sunxi_usb_fes_xfer_type_t {
     FES_XFER_SEND = 0x0,
     FES_XFER_RECV = 0x1,
