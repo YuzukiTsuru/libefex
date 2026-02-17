@@ -571,9 +571,9 @@ impl Context {
                     xfer_type,
                     cmd as u32,
                     &trans as *const _ as *const c_char,
-                    std::mem::size_of::<sunxi_fes_trans_t>() as c_int,
+                    std::mem::size_of::<sunxi_fes_trans_t>() as isize,
                     buff_ptr as *const c_char,
-                    length as c_int,
+                    length as isize,
                 )
             };
 
