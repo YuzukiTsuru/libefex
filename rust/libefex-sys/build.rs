@@ -166,131 +166,20 @@ fn main() {
         // macOS configuration
         builder.include(include_dir).files(c_files).warnings(false);
 
-        // Detect cross-compilation for macOS
-        let host_arch = env::var("CARGO_CFG_TARGET_ARCH_HOST")
-            .or_else(|_| env::var("HOST_ARCH"))
-            .unwrap_or_else(|_| {
-                if cfg!(target_arch = "aarch64") {
-                    "aarch64".to_string()
-                } else {
-                    "x86_64".to_string()
-                }
-            });
-
-        let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| host_arch.clone());
-
-        let is_cross_compile = host_arch != target_arch;
-
-        println!("cargo:warning=Host arch: {}, Target arch: {}, Cross compile: {}", 
-                 host_arch, target_arch, is_cross_compile);
-
-        // Determine Homebrew prefix based on target architecture
+        let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "aarch64".to_string());
         let homebrew_prefix = if target_arch == "aarch64" {
             "/opt/homebrew"
         } else {
             "/usr/local"
         };
 
-        let libusb_include_path = format!("{}/include/libusb-1.0", homebrew_prefix);
-
-        if is_cross_compile {
-            // Cross-compilation: use Homebrew paths directly
-            println!("cargo:warning=Cross-compiling for {}, using Homebrew at {}", target_arch, homebrew_prefix);
-        }
-
         // Add include paths
         builder.include(format!("{}/include", homebrew_prefix));
-        builder.include(&libusb_include_path);
+        builder.include(format!("{}/include/libusb-1.0", homebrew_prefix));
 
-        // Determine libusb source path
-        let dylib_name = "libusb-1.0.dylib";
-        let bundled_libusb_dir = root_dir.join("lib").join("macos");
-        let bundled_dylib = bundled_libusb_dir.join(dylib_name);
-        let homebrew_dylib = PathBuf::from(format!("{}/lib/libusb-1.0.dylib", homebrew_prefix));
-
-        // Prefer bundled dylib, fallback to homebrew
-        let (src_dylib, libusb_lib_dir) = if bundled_dylib.exists() {
-            println!("cargo:warning=Using bundled libusb from: {:?}", bundled_dylib);
-            (bundled_dylib.clone(), bundled_libusb_dir)
-        } else if homebrew_dylib.exists() {
-            println!("cargo:warning=Using homebrew libusb from: {:?}", homebrew_dylib);
-            (homebrew_dylib.clone(), PathBuf::from(format!("{}/lib", homebrew_prefix)))
-        } else {
-            panic!("libusb-1.0.dylib not found. Please install libusb via homebrew: brew install libusb, or place it in libs/libefex/lib/macos/");
-        };
-
-        println!("cargo:rustc-link-search={}", libusb_lib_dir.display());
+        // Link libusb
+        println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
         println!("cargo:rustc-link-lib=dylib=usb-1.0");
-
-        // Set rpath to find bundled libusb in Frameworks directory
-        // @executable_path/../Frameworks is where Tauri bundles external libraries
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
-        // Also add homebrew path for development
-        println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
-
-        // Copy libusb dylib to output directory and src-tauri/libs/macos for bundling
-        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-        let target_dir = out_dir
-            .ancestors()
-            .nth(3)
-            .expect("Failed to find target directory");
-        let dest_dylib = target_dir.join(dylib_name);
-
-        // Also copy to src-tauri/libs/macos for Tauri bundling
-        let src_tauri_dir = root_dir
-            .parent()
-            .and_then(|p| p.parent())
-            .expect("Failed to find src-tauri directory");
-        let bundle_lib_dir = src_tauri_dir.join("libs").join("macos");
-        let bundle_dylib = bundle_lib_dir.join(dylib_name);
-
-        println!("cargo:warning=Source dylib path: {:?}", src_dylib);
-        println!("cargo:warning=Target dylib path: {:?}", dest_dylib);
-        println!("cargo:warning=Bundle dylib path: {:?}", bundle_dylib);
-
-        // Create bundle directory if needed
-        fs::create_dir_all(&bundle_lib_dir).unwrap_or_else(|e| {
-            println!("cargo:warning=Failed to create bundle directory {:?}: {}", bundle_lib_dir, e);
-        });
-
-        // Copy the dylib to both locations
-        if src_dylib.exists() {
-            // Copy to target directory
-            match fs::copy(&src_dylib, &dest_dylib) {
-                Ok(_) => println!("cargo:warning=Copied {} to {:?}", dylib_name, dest_dylib),
-                Err(e) => println!("cargo:warning=Failed to copy {} to target: {}", dylib_name, e),
-            }
-
-            // Copy to bundle directory
-            match fs::copy(&src_dylib, &bundle_dylib) {
-                Ok(_) => {
-                    println!("cargo:warning=Copied {} to {:?}", dylib_name, bundle_dylib);
-                    
-                    // Modify the dylib's install_name to use @rpath
-                    let output = std::process::Command::new("install_name_tool")
-                        .arg("-id")
-                        .arg("@rpath/libusb-1.0.dylib")
-                        .arg(&bundle_dylib)
-                        .output();
-                    
-                    match output {
-                        Ok(result) => {
-                            if result.status.success() {
-                                println!("cargo:warning=Successfully set install_name for {}", dylib_name);
-                            } else {
-                                println!("cargo:warning=install_name_tool failed: {:?}", String::from_utf8_lossy(&result.stderr));
-                            }
-                        }
-                        Err(e) => {
-                            println!("cargo:warning=Failed to run install_name_tool: {}", e);
-                        }
-                    }
-                }
-                Err(e) => println!("cargo:warning=Failed to copy {} to bundle: {}", dylib_name, e),
-            }
-        } else {
-            println!("cargo:warning=Source dylib not found: {:?}", src_dylib);
-        }
     } else {
         // Linux configuration
         builder.include(include_dir).files(c_files).warnings(false);
