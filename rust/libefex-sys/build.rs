@@ -208,8 +208,8 @@ fn main() {
         builder.include(&libusb_include_path);
 
         // Set rpath for runtime library loading
-        // This allows the app to find libusb dylib in the Frameworks directory
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
+        // This allows the app to find libusb dylib in the Resources directory
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Resources");
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
 
         // Copy libusb dylib to output directory
