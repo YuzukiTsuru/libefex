@@ -191,7 +191,6 @@ fn main() {
             "/usr/local"
         };
 
-        let libusb_lib_path = format!("{}/lib/libusb-1.0.dylib", homebrew_prefix);
         let libusb_include_path = format!("{}/include/libusb-1.0", homebrew_prefix);
 
         if is_cross_compile {
