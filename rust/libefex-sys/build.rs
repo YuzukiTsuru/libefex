@@ -212,32 +212,41 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
 
-        // Copy libusb dylib to src-tauri/lib directory for bundling
-        // The dylib will be bundled via tauri.conf.json bundle.macOS.files configuration
-        let src_tauri_dir = root_dir
-            .parent()
-            .and_then(|p| p.parent())
-            .expect("Failed to find src-tauri directory");
-        let lib_dir = src_tauri_dir.join("lib");
-        
-        if let Err(e) = fs::create_dir_all(&lib_dir) {
-            println!("cargo:warning=Failed to create lib directory: {}", e);
-        }
-
-        // Copy libusb dylib
+        // Copy libusb dylib to output directory
+        let dylib_name = "libusb-1.0.0.dylib";
         let src_dylib = PathBuf::from(&libusb_lib_path);
-        let dest_dylib = lib_dir.join("libusb-1.0.0.dylib");
 
         println!("cargo:warning=Source dylib path: {:?}", src_dylib);
-        println!("cargo:warning=Destination dylib path: {:?}", dest_dylib);
+        println!("cargo:warning=Source dylib exists: {}", src_dylib.exists());
 
+        // Get the output directory where the dylib should be copied
+        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+        let target_dir = out_dir
+            .ancestors()
+            .nth(3)
+            .expect("Failed to find target directory");
+        let dest_dylib = target_dir.join(dylib_name);
+
+        println!("cargo:warning=Target dylib path: {:?}", dest_dylib);
+
+        // Create target directory if it doesn't exist
+        if let Some(dest_dir) = dest_dylib.parent() {
+            fs::create_dir_all(dest_dir).unwrap_or_else(|e| {
+                println!(
+                    "cargo:warning=Failed to create directory {:?}: {}",
+                    dest_dir, e
+                );
+            });
+        }
+
+        // Copy the dylib
         if src_dylib.exists() {
             match fs::copy(&src_dylib, &dest_dylib) {
-                Ok(_) => println!("cargo:warning=Copied libusb dylib to {:?}", dest_dylib),
-                Err(e) => println!("cargo:warning=Failed to copy libusb dylib: {}", e),
+                Ok(_) => println!("cargo:warning=Copied {} to {:?}", dylib_name, dest_dylib),
+                Err(e) => println!("cargo:warning=Failed to copy {}: {}", dylib_name, e),
             }
         } else {
-            println!("cargo:warning=libusb dylib not found at {:?}", src_dylib);
+            println!("cargo:warning=Source dylib not found: {:?}", src_dylib);
         }
     } else {
         // Linux configuration
