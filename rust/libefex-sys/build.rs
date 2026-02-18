@@ -166,7 +166,8 @@ fn main() {
         // macOS configuration
         builder.include(include_dir).files(c_files).warnings(false);
 
-        let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "aarch64".to_string());
+        let target_arch =
+            env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "aarch64".to_string());
         let homebrew_prefix = if target_arch == "aarch64" {
             "/opt/homebrew"
         } else {
