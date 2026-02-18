@@ -184,46 +184,61 @@ fn main() {
         println!("cargo:warning=Host arch: {}, Target arch: {}, Cross compile: {}", 
                  host_arch, target_arch, is_cross_compile);
 
+        // Determine Homebrew prefix based on target architecture
+        let homebrew_prefix = if target_arch == "aarch64" {
+            "/opt/homebrew"
+        } else {
+            "/usr/local"
+        };
+
+        let libusb_lib_path = format!("{}/lib/libusb-1.0.dylib", homebrew_prefix);
+        let libusb_include_path = format!("{}/include/libusb-1.0", homebrew_prefix);
+
         if is_cross_compile {
             // Cross-compilation: use Homebrew paths directly
-            let homebrew_prefix = if target_arch == "aarch64" {
-                "/opt/homebrew"
-            } else {
-                "/usr/local"
-            };
-
             println!("cargo:warning=Cross-compiling for {}, using Homebrew at {}", target_arch, homebrew_prefix);
-            println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
-            println!("cargo:rustc-link-lib=dylib=usb-1.0");
+        }
 
-            builder.include(format!("{}/include", homebrew_prefix));
-            builder.include(format!("{}/include/libusb-1.0", homebrew_prefix));
-        } else {
-            // Native compilation: try pkg-config first, fallback to Homebrew paths
-            match pkg_config::Config::new().probe("libusb-1.0") {
-                Ok(libusb) => {
-                    // Add libusb include paths from pkg-config
-                    for include in libusb.include_paths {
-                        builder.include(include);
-                    }
-                    println!("cargo:warning=Found libusb via pkg-config");
-                }
-                Err(e) => {
-                    // Fallback to Homebrew paths when pkg-config fails
-                    println!("cargo:warning=pkg-config failed: {}, trying Homebrew paths", e);
-                    
-                    let homebrew_prefix = if target_arch == "aarch64" {
-                        "/opt/homebrew"
-                    } else {
-                        "/usr/local"
-                    };
+        // Set up linking for libusb
+        println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
+        println!("cargo:rustc-link-lib=dylib=usb-1.0");
 
-                    println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
-                    println!("cargo:rustc-link-lib=dylib=usb-1.0");
-                    builder.include(format!("{}/include", homebrew_prefix));
-                    builder.include(format!("{}/include/libusb-1.0", homebrew_prefix));
-                }
+        // Add include paths
+        builder.include(format!("{}/include", homebrew_prefix));
+        builder.include(&libusb_include_path);
+
+        // Set rpath for runtime library loading
+        // This allows the app to find libusb dylib in the Frameworks directory
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
+
+        // Copy libusb dylib to Frameworks directory for bundling
+        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+        let target_dir = out_dir
+            .ancestors()
+            .nth(3)
+            .expect("Failed to find target directory");
+        
+        // Create Frameworks directory for app bundle
+        let frameworks_dir = target_dir.join("Frameworks");
+        if let Err(e) = fs::create_dir_all(&frameworks_dir) {
+            println!("cargo:warning=Failed to create Frameworks directory: {}", e);
+        }
+
+        // Copy libusb dylib
+        let src_dylib = PathBuf::from(&libusb_lib_path);
+        let dest_dylib = frameworks_dir.join("libusb-1.0.0.dylib");
+
+        println!("cargo:warning=Source dylib path: {:?}", src_dylib);
+        println!("cargo:warning=Destination dylib path: {:?}", dest_dylib);
+
+        if src_dylib.exists() {
+            match fs::copy(&src_dylib, &dest_dylib) {
+                Ok(_) => println!("cargo:warning=Copied libusb dylib to {:?}", dest_dylib),
+                Err(e) => println!("cargo:warning=Failed to copy libusb dylib: {}", e),
             }
+        } else {
+            println!("cargo:warning=libusb dylib not found at {:?}", src_dylib);
         }
     } else {
         // Linux configuration
