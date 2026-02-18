@@ -212,22 +212,21 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
 
-        // Copy libusb dylib to Frameworks directory for bundling
-        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-        let target_dir = out_dir
-            .ancestors()
-            .nth(3)
-            .expect("Failed to find target directory");
+        // Copy libusb dylib to src-tauri/lib directory for bundling
+        // The dylib will be bundled via tauri.conf.json bundle.macOS.files configuration
+        let src_tauri_dir = root_dir
+            .parent()
+            .and_then(|p| p.parent())
+            .expect("Failed to find src-tauri directory");
+        let lib_dir = src_tauri_dir.join("lib");
         
-        // Create Frameworks directory for app bundle
-        let frameworks_dir = target_dir.join("Frameworks");
-        if let Err(e) = fs::create_dir_all(&frameworks_dir) {
-            println!("cargo:warning=Failed to create Frameworks directory: {}", e);
+        if let Err(e) = fs::create_dir_all(&lib_dir) {
+            println!("cargo:warning=Failed to create lib directory: {}", e);
         }
 
         // Copy libusb dylib
         let src_dylib = PathBuf::from(&libusb_lib_path);
-        let dest_dylib = frameworks_dir.join("libusb-1.0.0.dylib");
+        let dest_dylib = lib_dir.join("libusb-1.0.0.dylib");
 
         println!("cargo:warning=Source dylib path: {:?}", src_dylib);
         println!("cargo:warning=Destination dylib path: {:?}", dest_dylib);
