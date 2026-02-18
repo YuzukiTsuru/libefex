@@ -208,46 +208,8 @@ fn main() {
         builder.include(&libusb_include_path);
 
         // Set rpath for runtime library loading
-        // This allows the app to find libusb dylib in the Resources directory
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Resources");
+        // Users need to install libusb via homebrew: brew install libusb
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", homebrew_prefix);
-
-        // Copy libusb dylib to output directory
-        let dylib_name = "libusb-1.0.0.dylib";
-        let src_dylib = PathBuf::from(&libusb_lib_path);
-
-        println!("cargo:warning=Source dylib path: {:?}", src_dylib);
-        println!("cargo:warning=Source dylib exists: {}", src_dylib.exists());
-
-        // Get the output directory where the dylib should be copied
-        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-        let target_dir = out_dir
-            .ancestors()
-            .nth(3)
-            .expect("Failed to find target directory");
-        let dest_dylib = target_dir.join(dylib_name);
-
-        println!("cargo:warning=Target dylib path: {:?}", dest_dylib);
-
-        // Create target directory if it doesn't exist
-        if let Some(dest_dir) = dest_dylib.parent() {
-            fs::create_dir_all(dest_dir).unwrap_or_else(|e| {
-                println!(
-                    "cargo:warning=Failed to create directory {:?}: {}",
-                    dest_dir, e
-                );
-            });
-        }
-
-        // Copy the dylib
-        if src_dylib.exists() {
-            match fs::copy(&src_dylib, &dest_dylib) {
-                Ok(_) => println!("cargo:warning=Copied {} to {:?}", dylib_name, dest_dylib),
-                Err(e) => println!("cargo:warning=Failed to copy {}: {}", dylib_name, e),
-            }
-        } else {
-            println!("cargo:warning=Source dylib not found: {:?}", src_dylib);
-        }
     } else {
         // Linux configuration
         builder.include(include_dir).files(c_files).warnings(false);
