@@ -162,11 +162,74 @@ fn main() {
         } else {
             println!("cargo:warning=Source DLL not found: {:?}", src_dll);
         }
-    } else {
-        // Linux/macOS configuration
+    } else if cfg!(target_os = "macos") {
+        // macOS configuration
         builder.include(include_dir).files(c_files).warnings(false);
 
-        // Use pkg-config to find libusb on Linux/macOS platforms
+        // Detect cross-compilation for macOS
+        let host_arch = env::var("CARGO_CFG_TARGET_ARCH_HOST")
+            .or_else(|_| env::var("HOST_ARCH"))
+            .unwrap_or_else(|_| {
+                if cfg!(target_arch = "aarch64") {
+                    "aarch64".to_string()
+                } else {
+                    "x86_64".to_string()
+                }
+            });
+
+        let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| host_arch.clone());
+
+        let is_cross_compile = host_arch != target_arch;
+
+        println!("cargo:warning=Host arch: {}, Target arch: {}, Cross compile: {}", 
+                 host_arch, target_arch, is_cross_compile);
+
+        if is_cross_compile {
+            // Cross-compilation: use Homebrew paths directly
+            let homebrew_prefix = if target_arch == "aarch64" {
+                "/opt/homebrew"
+            } else {
+                "/usr/local"
+            };
+
+            println!("cargo:warning=Cross-compiling for {}, using Homebrew at {}", target_arch, homebrew_prefix);
+            println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
+            println!("cargo:rustc-link-lib=dylib=usb-1.0");
+
+            builder.include(format!("{}/include", homebrew_prefix));
+            builder.include(format!("{}/include/libusb-1.0", homebrew_prefix));
+        } else {
+            // Native compilation: try pkg-config first, fallback to Homebrew paths
+            match pkg_config::Config::new().probe("libusb-1.0") {
+                Ok(libusb) => {
+                    // Add libusb include paths from pkg-config
+                    for include in libusb.include_paths {
+                        builder.include(include);
+                    }
+                    println!("cargo:warning=Found libusb via pkg-config");
+                }
+                Err(e) => {
+                    // Fallback to Homebrew paths when pkg-config fails
+                    println!("cargo:warning=pkg-config failed: {}, trying Homebrew paths", e);
+                    
+                    let homebrew_prefix = if target_arch == "aarch64" {
+                        "/opt/homebrew"
+                    } else {
+                        "/usr/local"
+                    };
+
+                    println!("cargo:rustc-link-search={}/lib", homebrew_prefix);
+                    println!("cargo:rustc-link-lib=dylib=usb-1.0");
+                    builder.include(format!("{}/include", homebrew_prefix));
+                    builder.include(format!("{}/include/libusb-1.0", homebrew_prefix));
+                }
+            }
+        }
+    } else {
+        // Linux configuration
+        builder.include(include_dir).files(c_files).warnings(false);
+
+        // Use pkg-config to find libusb on Linux platforms
         let libusb = pkg_config::Config::new()
             .probe("libusb-1.0")
             .expect("Failed to find libusb-1.0");
