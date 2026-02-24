@@ -152,6 +152,117 @@ static int winusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 	return device_found ? EFEX_ERR_SUCCESS : EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
+static int winusb_scan_devices(struct sunxi_scanned_device_t **devices, size_t *count) {
+	if (!devices || !count) {
+		return EFEX_ERR_NULL_PTR;
+	}
+
+	*devices = NULL;
+	*count = 0;
+
+	SP_DEVICE_INTERFACE_DATA interface_data;
+	ULONG index = 0;
+	size_t found_count = 0;
+
+	const LPGUID usb_device_guid = (LPGUID) &GUID_DEVINTERFACE_USB_DEVICE;
+
+	const HDEVINFO device_info_set =
+			SetupDiGetClassDevs(usb_device_guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+	if (device_info_set == INVALID_HANDLE_VALUE) {
+		return EFEX_ERR_USB_INIT;
+	}
+
+	BOOL result = TRUE;
+	while (result) {
+		interface_data.cbSize = sizeof(interface_data);
+		result = SetupDiEnumDeviceInterfaces(device_info_set, NULL, usb_device_guid, (ULONG) index, &interface_data);
+
+		if (result) {
+			DWORD required_size = 0;
+			SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, NULL, 0, &required_size, NULL);
+			if (required_size == 0) {
+				index++;
+				continue;
+			}
+
+			const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data =
+					(PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(required_size);
+			if (detail_data == NULL) {
+				SetupDiDestroyDeviceInfoList(device_info_set);
+				return EFEX_ERR_MEMORY;
+			}
+			detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+			if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, detail_data, required_size, NULL,
+			                                    NULL)) {
+				if (match_vid_pid(detail_data->DevicePath)) {
+					found_count++;
+				}
+			}
+			free(detail_data);
+			index++;
+		}
+	}
+
+	if (found_count == 0) {
+		SetupDiDestroyDeviceInfoList(device_info_set);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+	}
+
+	struct sunxi_scanned_device_t *result_devices = (struct sunxi_scanned_device_t *)malloc(
+		sizeof(struct sunxi_scanned_device_t) * found_count);
+	if (!result_devices) {
+		SetupDiDestroyDeviceInfoList(device_info_set);
+		return EFEX_ERR_MEMORY;
+	}
+
+	index = 0;
+	size_t idx = 0;
+	result = TRUE;
+	while (result && idx < found_count) {
+		interface_data.cbSize = sizeof(interface_data);
+		result = SetupDiEnumDeviceInterfaces(device_info_set, NULL, usb_device_guid, (ULONG) index, &interface_data);
+
+		if (result) {
+			DWORD required_size = 0;
+			SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, NULL, 0, &required_size, NULL);
+			if (required_size == 0) {
+				index++;
+				continue;
+			}
+
+			const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data =
+					(PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(required_size);
+			if (detail_data == NULL) {
+				free(result_devices);
+				SetupDiDestroyDeviceInfoList(device_info_set);
+				return EFEX_ERR_MEMORY;
+			}
+			detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+			if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, detail_data, required_size, NULL,
+			                                    NULL)) {
+				if (match_vid_pid(detail_data->DevicePath)) {
+					result_devices[idx].bus = 0;
+					result_devices[idx].port = (uint8_t)(index + 1);
+					result_devices[idx].vid = SUNXI_USB_VENDOR;
+					result_devices[idx].pid = SUNXI_USB_PRODUCT;
+					idx++;
+				}
+			}
+			free(detail_data);
+			index++;
+		}
+	}
+
+	SetupDiDestroyDeviceInfoList(device_info_set);
+
+	*devices = result_devices;
+	*count = found_count;
+	return EFEX_ERR_SUCCESS;
+}
+
 static int winusb_init(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx || !ctx->dev_name) {
 		return EFEX_ERR_NULL_PTR;
@@ -188,6 +299,7 @@ const struct usb_backend_ops usb_winusb_ops = {
 	.bulk_send = winusb_bulk_send,
 	.bulk_recv = winusb_bulk_recv,
 	.scan_device = winusb_scan_device,
+	.scan_devices = winusb_scan_devices,
 	.init = winusb_init,
 	.exit = winusb_exit,
 };

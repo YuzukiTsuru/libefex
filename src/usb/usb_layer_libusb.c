@@ -90,6 +90,78 @@ static int libusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 	return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
+static int libusb_scan_devices(struct sunxi_scanned_device_t **devices, size_t *count) {
+	if (!devices || !count) {
+		return EFEX_ERR_NULL_PTR;
+	}
+
+	*devices = NULL;
+	*count = 0;
+
+	libusb_device **list = NULL;
+	libusb_context *context = NULL;
+
+	int r = libusb_init(&context);
+	if (r < 0) {
+		return EFEX_ERR_USB_INIT;
+	}
+
+	const ssize_t device_count = libusb_get_device_list(context, &list);
+	if (device_count < 0) {
+		libusb_exit(context);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+	}
+
+	size_t found_count = 0;
+	for (ssize_t i = 0; i < device_count; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		if (libusb_get_device_descriptor(device, &desc) != 0) {
+			continue;
+		}
+		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
+			found_count++;
+		}
+	}
+
+	if (found_count == 0) {
+		libusb_free_device_list(list, 1);
+		libusb_exit(context);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+	}
+
+	struct sunxi_scanned_device_t *result = (struct sunxi_scanned_device_t *)malloc(
+		sizeof(struct sunxi_scanned_device_t) * found_count);
+	if (!result) {
+		libusb_free_device_list(list, 1);
+		libusb_exit(context);
+		return EFEX_ERR_MEMORY;
+	}
+
+	size_t idx = 0;
+	for (ssize_t i = 0; i < device_count && idx < found_count; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		if (libusb_get_device_descriptor(device, &desc) != 0) {
+			continue;
+		}
+		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
+			result[idx].bus = libusb_get_bus_number(device);
+			result[idx].port = libusb_get_port_number(device);
+			result[idx].vid = desc.idVendor;
+			result[idx].pid = desc.idProduct;
+			idx++;
+		}
+	}
+
+	libusb_free_device_list(list, 1);
+	libusb_exit(context);
+
+	*devices = result;
+	*count = found_count;
+	return EFEX_ERR_SUCCESS;
+}
+
 static int libusb_backend_init(struct sunxi_efex_ctx_t *ctx) {
 	if (ctx && ctx->hdl) {
 		libusb_device_handle *libusb_hdl = (libusb_device_handle *) ctx->hdl;
@@ -147,6 +219,7 @@ const struct usb_backend_ops usb_libusb_ops = {
 	.bulk_send = libusb_bulk_send,
 	.bulk_recv = libusb_bulk_recv,
 	.scan_device = libusb_scan_device,
+	.scan_devices = libusb_scan_devices,
 	.init = libusb_backend_init,
 	.exit = libusb_backend_exit,
 };

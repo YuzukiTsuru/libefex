@@ -289,6 +289,16 @@ pub enum usb_backend_type {
     USB_BACKEND_WINUSB = 2,
 }
 
+// Scanned device information
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sunxi_scanned_device_t {
+    pub bus: u8,
+    pub port: u8,
+    pub vid: u16,
+    pub pid: u16,
+}
+
 // Declare C functions
 extern "C" {
     // Common functions
@@ -302,6 +312,11 @@ extern "C" {
     pub fn sunxi_read_efex_status(ctx: *const sunxi_efex_ctx_t) -> c_int;
 
     pub fn sunxi_scan_usb_device(ctx: *mut sunxi_efex_ctx_t) -> c_int;
+
+    pub fn sunxi_scan_usb_devices(
+        devices: *mut *mut sunxi_scanned_device_t,
+        count: *mut size_t,
+    ) -> c_int;
 
     pub fn sunxi_efex_get_device_mode(ctx: *const sunxi_efex_ctx_t) -> sunxi_verify_device_mode_t;
 

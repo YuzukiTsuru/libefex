@@ -4,13 +4,18 @@ use std::str;
 use libefex_sys::*;
 use thiserror::Error;
 
-/// Success error code
 const EFEX_ERR_SUCCESS: i32 = 0;
 
-/// Maximum size of EFEX code xfer
 const EFEX_CODE_MAX_SIZE: usize = 64 * 1024;
 
-/// Error type definition
+#[derive(Debug, Clone)]
+pub struct ScannedDevice {
+    pub bus: u8,
+    pub port: u8,
+    pub vid: u16,
+    pub pid: u16,
+}
+
 #[derive(Error, Debug)]
 pub enum EfexError {
     /// Invalid parameter
@@ -199,6 +204,41 @@ impl Context {
             return Err(c_error_to_rust(result));
         }
         Ok(())
+    }
+
+    /// Scan all USB devices
+    pub fn scan_usb_devices() -> Result<Vec<ScannedDevice>, EfexError> {
+        let mut devices_ptr: *mut sunxi_scanned_device_t = std::ptr::null_mut();
+        let mut count: usize = 0;
+
+        let result = unsafe {
+            sunxi_scan_usb_devices(&mut devices_ptr, &mut count)
+        };
+
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+
+        if devices_ptr.is_null() || count == 0 {
+            return Ok(Vec::new());
+        }
+
+        let devices = unsafe {
+            let slice = std::slice::from_raw_parts(devices_ptr, count);
+            let vec: Vec<ScannedDevice> = slice
+                .iter()
+                .map(|d| ScannedDevice {
+                    bus: d.bus,
+                    port: d.port,
+                    vid: d.vid,
+                    pid: d.pid,
+                })
+                .collect();
+            libc::free(devices_ptr as *mut std::ffi::c_void);
+            vec
+        };
+
+        Ok(devices)
     }
 
     /// Initialize USB

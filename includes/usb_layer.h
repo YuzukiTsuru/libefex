@@ -29,6 +29,18 @@ enum usb_backend_type {
 };
 
 /**
+ * @brief Scanned device information
+ *
+ * Contains information about a scanned USB device.
+ */
+struct sunxi_scanned_device_t {
+	uint8_t bus;           /**< USB bus number */
+	uint8_t port;          /**< USB port number */
+	uint16_t vid;          /**< Vendor ID */
+	uint16_t pid;          /**< Product ID */
+};
+
+/**
  * @brief USB backend operations structure
  *
  * Function pointers for USB backend operations. Each backend must implement
@@ -38,6 +50,7 @@ struct usb_backend_ops {
 	int (*bulk_send)(void *handle, int ep, const char *buf, ssize_t len);   /**< Send bulk data */
 	int (*bulk_recv)(void *handle, int ep, char *buf, ssize_t len);   /**< Receive bulk data */
 	int (*scan_device)(struct sunxi_efex_ctx_t *ctx);                 /**< Scan for USB device */
+	int (*scan_devices)(struct sunxi_scanned_device_t **devices, size_t *count); /**< Scan for all USB devices */
 	int (*init)(struct sunxi_efex_ctx_t *ctx);                       /**< Initialize USB context */
 	int (*exit)(struct sunxi_efex_ctx_t *ctx);                       /**< Cleanup USB context */
 };
@@ -77,6 +90,18 @@ int sunxi_usb_bulk_recv(void *handle, int ep, char *buf, ssize_t len);
  * @return EFEX_ERR_SUCCESS on success, or an error code on failure
  */
 int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Scan for all USB devices
+ *
+ * Scans for all USB devices matching the vendor and product IDs.
+ * The caller is responsible for freeing the returned devices array.
+ *
+ * @param devices Pointer to receive array of scanned devices (caller must free)
+ * @param count Pointer to receive number of devices found
+ * @return EFEX_ERR_SUCCESS on success, or an error code on failure
+ */
+int sunxi_scan_usb_devices(struct sunxi_scanned_device_t **devices, size_t *count);
 
 /**
  * @brief Initialize USB context
