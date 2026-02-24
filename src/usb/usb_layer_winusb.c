@@ -269,7 +269,6 @@ static int winusb_scan_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint
 	}
 
 	SP_DEVICE_INTERFACE_DATA interface_data;
-	ULONG index = 0;
 	ULONG target_index = (ULONG)(port - 1);
 	BOOL device_found = FALSE;
 
@@ -282,52 +281,37 @@ static int winusb_scan_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint
 		return EFEX_ERR_USB_INIT;
 	}
 
-	BOOL result = TRUE;
-	ULONG matched_count = 0;
-
-	while (result) {
-		interface_data.cbSize = sizeof(interface_data);
-		result = SetupDiEnumDeviceInterfaces(device_info_set, NULL, usb_device_guid, (ULONG) index, &interface_data);
-
-		if (result) {
-			DWORD required_size = 0;
-			SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, NULL, 0, &required_size, NULL);
-			if (required_size == 0) {
-				index++;
-				continue;
-			}
-
-			const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data =
-					(PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(required_size);
-			if (detail_data == NULL) {
-				SetupDiDestroyDeviceInfoList(device_info_set);
-				return EFEX_ERR_MEMORY;
-			}
-			detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-
-			if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, detail_data, required_size, NULL,
-			                                    NULL)) {
-				if (match_vid_pid(detail_data->DevicePath)) {
-					if (matched_count == target_index) {
-						ctx->dev_name = (char *) malloc(strlen(detail_data->DevicePath) + 1);
-						if (ctx->dev_name != NULL) {
-							strcpy(ctx->dev_name, detail_data->DevicePath);
-							device_found = TRUE;
-							free(detail_data);
-							break;
-						}
-						free(detail_data);
-						SetupDiDestroyDeviceInfoList(device_info_set);
-						return EFEX_ERR_MEMORY;
-					}
-					matched_count++;
-				}
-			}
-			free(detail_data);
-			index++;
-		}
+	interface_data.cbSize = sizeof(interface_data);
+	if (!SetupDiEnumDeviceInterfaces(device_info_set, NULL, usb_device_guid, target_index, &interface_data)) {
+		SetupDiDestroyDeviceInfoList(device_info_set);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 	}
 
+	DWORD required_size = 0;
+	SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, NULL, 0, &required_size, NULL);
+	if (required_size == 0) {
+		SetupDiDestroyDeviceInfoList(device_info_set);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+	}
+
+	const PSP_DEVICE_INTERFACE_DETAIL_DATA detail_data =
+			(PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(required_size);
+	if (detail_data == NULL) {
+		SetupDiDestroyDeviceInfoList(device_info_set);
+		return EFEX_ERR_MEMORY;
+	}
+	detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+	if (SetupDiGetDeviceInterfaceDetail(device_info_set, &interface_data, detail_data, required_size, NULL, NULL)) {
+		if (match_vid_pid(detail_data->DevicePath)) {
+			ctx->dev_name = (char *) malloc(strlen(detail_data->DevicePath) + 1);
+			if (ctx->dev_name != NULL) {
+				strcpy(ctx->dev_name, detail_data->DevicePath);
+				device_found = TRUE;
+			}
+		}
+	}
+	free(detail_data);
 	SetupDiDestroyDeviceInfoList(device_info_set);
 
 	return device_found ? EFEX_ERR_SUCCESS : EFEX_ERR_USB_DEVICE_NOT_FOUND;
