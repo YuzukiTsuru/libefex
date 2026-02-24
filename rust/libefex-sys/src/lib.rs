@@ -313,6 +313,8 @@ extern "C" {
 
     pub fn sunxi_scan_usb_device(ctx: *mut sunxi_efex_ctx_t) -> c_int;
 
+    pub fn sunxi_scan_usb_device_at(ctx: *mut sunxi_efex_ctx_t, bus: u8, port: u8) -> c_int;
+
     pub fn sunxi_scan_usb_devices(
         devices: *mut *mut sunxi_scanned_device_t,
         count: *mut size_t,

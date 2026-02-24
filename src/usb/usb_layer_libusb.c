@@ -162,6 +162,43 @@ static int libusb_scan_devices(struct sunxi_scanned_device_t **devices, size_t *
 	return EFEX_ERR_SUCCESS;
 }
 
+static int libusb_scan_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port) {
+	if (!ctx) {
+		return EFEX_ERR_NULL_PTR;
+	}
+
+	libusb_device **list = NULL;
+	libusb_context *context = NULL;
+
+	libusb_init(&context);
+	ctx->usb_context = context;
+	const size_t count = libusb_get_device_list(context, &list);
+	for (size_t i = 0; i < count; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		if (libusb_get_device_descriptor(device, &desc) != 0) {
+			continue;
+		}
+		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
+			uint8_t dev_bus = libusb_get_bus_number(device);
+			uint8_t dev_port = libusb_get_port_number(device);
+			if (dev_bus == bus && dev_port == port) {
+				libusb_device_handle *libusb_hdl = NULL;
+				if (libusb_open(device, &libusb_hdl) != 0) {
+					fprintf(stderr, "ERROR: Can't connect to device at bus=%d port=%d\r\n", bus, port);
+					libusb_free_device_list(list, 1);
+					return EFEX_ERR_USB_INIT;
+				}
+				ctx->hdl = libusb_hdl;
+				libusb_free_device_list(list, 1);
+				return EFEX_ERR_SUCCESS;
+			}
+		}
+	}
+	libusb_free_device_list(list, 1);
+	return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+}
+
 static int libusb_backend_init(struct sunxi_efex_ctx_t *ctx) {
 	if (ctx && ctx->hdl) {
 		libusb_device_handle *libusb_hdl = (libusb_device_handle *) ctx->hdl;
@@ -219,6 +256,7 @@ const struct usb_backend_ops usb_libusb_ops = {
 	.bulk_send = libusb_bulk_send,
 	.bulk_recv = libusb_bulk_recv,
 	.scan_device = libusb_scan_device,
+	.scan_device_at = libusb_scan_device_at,
 	.scan_devices = libusb_scan_devices,
 	.init = libusb_backend_init,
 	.exit = libusb_backend_exit,

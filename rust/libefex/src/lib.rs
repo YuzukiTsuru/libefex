@@ -206,6 +206,15 @@ impl Context {
         Ok(())
     }
 
+    /// Scan USB device at specific bus/port
+    pub fn scan_usb_device_at(&mut self, bus: u8, port: u8) -> Result<(), EfexError> {
+        let result = unsafe { sunxi_scan_usb_device_at(&mut self.ctx, bus, port) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
     /// Scan all USB devices
     pub fn scan_usb_devices() -> Result<Vec<ScannedDevice>, EfexError> {
         let mut devices_ptr: *mut sunxi_scanned_device_t = std::ptr::null_mut();

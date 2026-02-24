@@ -50,6 +50,7 @@ struct usb_backend_ops {
 	int (*bulk_send)(void *handle, int ep, const char *buf, ssize_t len);   /**< Send bulk data */
 	int (*bulk_recv)(void *handle, int ep, char *buf, ssize_t len);   /**< Receive bulk data */
 	int (*scan_device)(struct sunxi_efex_ctx_t *ctx);                 /**< Scan for USB device */
+	int (*scan_device_at)(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port); /**< Scan for USB device at specific bus/port */
 	int (*scan_devices)(struct sunxi_scanned_device_t **devices, size_t *count); /**< Scan for all USB devices */
 	int (*init)(struct sunxi_efex_ctx_t *ctx);                       /**< Initialize USB context */
 	int (*exit)(struct sunxi_efex_ctx_t *ctx);                       /**< Cleanup USB context */
@@ -90,6 +91,18 @@ int sunxi_usb_bulk_recv(void *handle, int ep, char *buf, ssize_t len);
  * @return EFEX_ERR_SUCCESS on success, or an error code on failure
  */
 int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx);
+
+/**
+ * @brief Scan for USB device at specific bus/port
+ *
+ * Scans for a USB device at the specified bus and port.
+ *
+ * @param ctx EFEX context structure
+ * @param bus USB bus number
+ * @param port USB port number
+ * @return EFEX_ERR_SUCCESS on success, or an error code on failure
+ */
+int sunxi_scan_usb_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port);
 
 /**
  * @brief Scan for all USB devices

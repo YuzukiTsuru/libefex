@@ -45,6 +45,14 @@ int sunxi_scan_usb_device(struct sunxi_efex_ctx_t *ctx) {
 	return ops->scan_device(ctx);
 }
 
+int sunxi_scan_usb_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port) {
+	const struct usb_backend_ops *ops = get_backend_ops();
+	if (!ops || !ops->scan_device_at) {
+		return EFEX_ERR_NOT_SUPPORT;
+	}
+	return ops->scan_device_at(ctx, bus, port);
+}
+
 int sunxi_scan_usb_devices(struct sunxi_scanned_device_t **devices, size_t *count) {
 	const struct usb_backend_ops *ops = get_backend_ops();
 	if (!ops || !ops->scan_devices) {
