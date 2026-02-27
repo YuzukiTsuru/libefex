@@ -220,9 +220,7 @@ impl Context {
         let mut devices_ptr: *mut sunxi_scanned_device_t = std::ptr::null_mut();
         let mut count: usize = 0;
 
-        let result = unsafe {
-            sunxi_scan_usb_devices(&mut devices_ptr, &mut count)
-        };
+        let result = unsafe { sunxi_scan_usb_devices(&mut devices_ptr, &mut count) };
 
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
