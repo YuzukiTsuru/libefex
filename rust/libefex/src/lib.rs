@@ -487,11 +487,11 @@ impl Context {
                 return Err(c_error_to_rust(result));
             }
 
-            addr_cur += if is_data_type {
+            addr_cur = addr_cur.wrapping_add(if is_data_type {
                 length as u32
             } else {
                 (length / 512) as u32
-            };
+            });
             buff_ptr = unsafe { buff_ptr.add(length) };
             written += length;
 
@@ -635,7 +635,7 @@ impl Context {
                 return Err(c_error_to_rust(result));
             }
 
-            addr_cur += if is_data_type { length } else { length / 512 };
+            addr_cur = addr_cur.wrapping_add(if is_data_type { length } else { length / 512 });
             buff_ptr = unsafe { buff_ptr.add(length as usize) };
             transferred += length as u64;
 
