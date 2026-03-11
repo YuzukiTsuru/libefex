@@ -21,9 +21,6 @@ jobs:
           # Windows ARM64
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-          # macOS x64
-          - os: macos-13
-            target: x86_64-apple-darwin
           # macOS ARM64
           - os: macos-latest
             target: aarch64-apple-darwin
