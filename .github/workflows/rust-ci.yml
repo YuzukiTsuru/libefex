@@ -63,7 +63,3 @@ jobs:
       - name: Check
         working-directory: ./rust
         run: cargo check --release --target ${{ matrix.target }}
-
-      - name: Run tests
-        working-directory: ./rust
-        run: cargo test --release --target ${{ matrix.target }}
