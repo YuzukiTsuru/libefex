@@ -43,11 +43,6 @@ jobs:
             arch: arm64
             c_compiler: gcc
             cpp_compiler: g++
-          # macOS x64
-          - os: macos-13
-            arch: x64
-            c_compiler: clang
-            cpp_compiler: clang++
           # macOS ARM64
           - os: macos-latest
             arch: arm64
