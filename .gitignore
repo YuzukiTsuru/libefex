@@ -667,3 +667,5 @@ FodyWeavers.xsd
 *.sln.iml
 
 *.fex
+
+build-msvc/

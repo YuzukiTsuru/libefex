@@ -1,15 +1,14 @@
 function(add_executable_with_libraries target_name source_file)
     add_executable(${target_name} ${source_file})
-    if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
-        if (MSVC)
-            target_link_directories(${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/lib/libusb/VS2022/MS64/static)
-            target_link_libraries(${target_name} PRIVATE efex libusb-1.0.lib)
-        else ()
-            target_link_directories(${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/lib/libusb/MinGW64/static)
-            target_link_libraries(${target_name} PRIVATE efex libusb-1.0.a)
-        endif ()
-    else()
-        target_link_libraries(${target_name} PRIVATE efex usb-1.0)
-    endif ()
+    target_link_libraries(${target_name} PRIVATE efex usb-1.0)
+
+    # Copy libusb DLL to output directory when using shared library
+    if(LIBEFEX_USE_SHARED_LIBUSB)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:usb-1.0>"
+            "$<TARGET_FILE_DIR:${target_name}>"
+        )
+    endif()
 endfunction()
 

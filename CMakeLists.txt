@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16)
 project(libefex C)
 
 set(CMAKE_C_STANDARD 11)
@@ -8,9 +8,18 @@ if(WIN32)
     message("-- Enable winusb support: ${USE_WINUSB}")
 endif()
 
+# libusb build options (default shared for LGPL compliance)
+option(LIBEFEX_USE_SHARED_LIBUSB "Build libusb as shared library (LGPL compatible)" ON)
+if(LIBEFEX_USE_SHARED_LIBUSB)
+    set(LIBUSB_BUILD_SHARED_LIBS ON CACHE BOOL "Build libusb as shared library" FORCE)
+else()
+    set(LIBUSB_BUILD_SHARED_LIBS OFF CACHE BOOL "Build libusb as static library" FORCE)
+endif()
+
+add_subdirectory(lib/libusb-cmake)
+
 include_directories(
         includes
-        lib/libusb/include
 )
 
 add_subdirectory(src)

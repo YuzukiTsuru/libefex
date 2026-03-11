@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd D:/Github/libefex/build && cmake -G \"MinGW Makefiles\" -DCMAKE_C_COMPILER=D:/SDK/mingw64/bin/gcc.exe -DCMAKE_CXX_COMPILER=D:/SDK/mingw64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=D:/SDK/mingw64/bin/mingw32-make.exe ..)",
+      "Bash(ls -la D:/Github/libefex/build/*.exe D:/Github/libefex/build/*.dll D:/Github/libefex/build/src/*.a 2>/dev/null || ls -la D:/Github/libefex/build/)",
+      "Bash(where cl.exe 2>/dev/null || echo \"cl.exe not in PATH, checking VS locations...\")",
+      "Bash(cmake -G help 2>&1 | grep -i \"Visual Studio\")",
+      "Bash(cd D:/Github/libefex/build-msvc && cmake -G \"Visual Studio 17 2022\" -A x64 ..)",
+      "Bash(cd D:/Github/libefex/build-msvc && cmake --build . --config Release -j)",
+      "Bash(D:/Github/libefex/build-msvc/Release/scan_device.exe)"
+    ]
+  }
+}

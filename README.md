@@ -17,20 +17,19 @@ libefex is a cross-platform library for interacting with Sunxi chips in both FEL
 
 ### Prerequisites
 
-- CMake 3.11 or higher
+- CMake 3.16 or higher
 - C compiler (GCC, Clang, MSVC, etc.)
-- libusb development library
+- Linux: `libudev-dev` package (optional, for USB hotplug support)
 
 ### Build Steps
 
 ```bash
-# Clone the repository
-git clone https://github.com/YuzukiTsuru/libefex.git
+# Clone the repository with submodules
+git clone --recursive https://github.com/YuzukiTsuru/libefex.git
 cd libefex
 
 # Create build directory
-mkdir build
-cd build
+mkdir build && cd build
 
 # Configure the project
 cmake ..
@@ -39,6 +38,21 @@ cmake ..
 cmake --build .
 ```
 
+### CMake Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `LIBEFEX_USE_SHARED_LIBUSB` | ON | Build libusb as shared library (LGPL compatible) |
+| `USE_WINUSB` | ON (Windows) | Enable WinUSB backend on Windows |
+
+To build with static libusb:
+
+```bash
+cmake -DLIBEFEX_USE_SHARED_LIBUSB=OFF ..
+```
+
 ## License
 
 libefex is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+
+libusb is licensed under the GNU Lesser General Public License v2.1. See [lib/libusb-cmake/libusb/COPYING](lib/libusb-cmake/libusb/COPYING) for details.

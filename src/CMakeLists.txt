@@ -12,6 +12,9 @@ add_library(efex STATIC
         $<TARGET_OBJECTS:arch-obj>
 )
 
+# Link against libusb built from source
+target_link_libraries(efex PRIVATE usb-1.0)
+
 if(WIN32)
     target_sources(efex PRIVATE
         usb/usb_layer_winusb.c
