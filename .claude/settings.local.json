@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"D:/Github/OpenixSuit-src/src-tauri/libs/libefex/rust/libefex-sys\" && cargo build --release 2>&1)"
+    ]
+  }
+}

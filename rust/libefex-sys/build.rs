@@ -6,76 +6,165 @@ pub fn link_framework(name: &str) {
     println!("cargo:rustc-link-lib=framework={}", name);
 }
 
-fn build_libusb_cmake(libusb_cmake_dir: &PathBuf) -> PathBuf {
-    let mut cmake_config = cmake::Config::new(libusb_cmake_dir);
-    cmake_config
-        .define("LIBUSB_BUILD_SHARED_LIBS", "ON")
-        .define("LIBUSB_BUILD_TESTING", "OFF")
-        .define("LIBUSB_BUILD_EXAMPLES", "OFF")
-        .define("LIBUSB_ENABLE_LOGGING", "ON");
-
-    // Platform-specific options
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("linux".into()) {
-        cmake_config.define("LIBUSB_ENABLE_UDEV", "ON");
-    }
-
-    let dst = cmake_config.build();
-
-    // The library output location depends on the platform and generator
-    let lib_dir = dst.join("lib");
-    if lib_dir.exists() {
-        println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    }
-
-    // Also check for multi-config generators (like Visual Studio)
-    for config in &["Release", "Debug", ""] {
-        let config_dir = if config.is_empty() {
-            dst.join("lib")
-        } else {
-            dst.join("lib").join(config)
-        };
-        if config_dir.exists() {
-            println!("cargo:rustc-link-search=native={}", config_dir.display());
-        }
-    }
-
-    // Link the library
-    println!("cargo:rustc-link-lib=dylib=usb-1.0");
-
-    dst
-}
-
-fn copy_dll_to_output(dll_path: &PathBuf) {
-    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-    let target_dir = out_dir
-        .ancestors()
-        .nth(3)
-        .expect("Failed to find target directory");
-
-    if let Some(dll_name) = dll_path.file_name() {
-        let dest_path = target_dir.join(dll_name);
-        if dll_path.exists() {
-            let _ = fs::copy(dll_path, &dest_path);
+fn link(name: &str, bundled: bool) {
+    use std::env::var;
+    let target = var("TARGET").unwrap();
+    let target: Vec<_> = target.split('-').collect();
+    if target.get(2) == Some(&"windows") {
+        println!("cargo:rustc-link-lib=dylib={}", name);
+        if bundled && target.get(3) == Some(&"gnu") {
+            let dir = var("CARGO_MANIFEST_DIR").unwrap();
+            println!("cargo:rustc-link-search=native={}/{}", dir, target[0]);
         }
     }
 }
 
-fn find_built_dll(build_dir: &PathBuf) -> Option<PathBuf> {
-    let search_paths = vec![
-        build_dir.join("lib").join("libusb-1.0.dll"),
-        build_dir.join("lib").join("Release").join("libusb-1.0.dll"),
-        build_dir.join("lib").join("Debug").join("libusb-1.0.dll"),
-        build_dir.join("bin").join("libusb-1.0.dll"),
-        build_dir.join("bin").join("Release").join("libusb-1.0.dll"),
-        build_dir.join("bin").join("Debug").join("libusb-1.0.dll"),
-    ];
+fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
+    let include_dir = out_dir.join("include");
+    fs::create_dir_all(&include_dir).unwrap();
 
-    for path in search_paths {
-        if path.exists() {
-            return Some(path);
+    // Copy libusb.h
+    fs::copy(
+        libusb_source.join("libusb/libusb.h"),
+        include_dir.join("libusb.h"),
+    )
+    .unwrap();
+
+    // Create config.h
+    let config_h_path = include_dir.join("config.h");
+
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let target_family = std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
+
+    if target_os == "windows" && target_env == "msvc" {
+        // Use MSVC config
+        fs::copy(
+            libusb_source.join("msvc/config.h"),
+            &config_h_path,
+        )
+        .unwrap();
+    } else {
+        // Create a minimal config.h for other platforms
+        let mut config_content = String::new();
+
+        config_content.push_str("#ifndef CONFIG_H\n");
+        config_content.push_str("#define CONFIG_H\n");
+        config_content.push_str("#define PRINTF_FORMAT(a, b)\n");
+        config_content.push_str("#define ENABLE_LOGGING 1\n");
+
+        if target_family == "unix" {
+            config_content.push_str("#define HAVE_SYS_TIME_H 1\n");
+            config_content.push_str("#define HAVE_NFDS_T 1\n");
+            config_content.push_str("#define PLATFORM_POSIX 1\n");
+            config_content.push_str("#define HAVE_CLOCK_GETTIME 1\n");
+            config_content.push_str("#define DEFAULT_VISIBILITY __attribute__((visibility(\"default\")))\n");
         }
+
+        if target_os == "linux" {
+            config_content.push_str("#define OS_LINUX 1\n");
+            config_content.push_str("#define HAVE_ASM_TYPES_H 1\n");
+            config_content.push_str("#define _GNU_SOURCE 1\n");
+            config_content.push_str("#define HAVE_TIMERFD 1\n");
+            config_content.push_str("#define HAVE_EVENTFD 1\n");
+        }
+
+        if target_os == "macos" {
+            config_content.push_str("#define OS_DARWIN 1\n");
+            config_content.push_str("#define TARGET_OS_OSX 1\n");
+        }
+
+        if target_os == "windows" {
+            config_content.push_str("#define OS_WINDOWS 1\n");
+            config_content.push_str("#define PLATFORM_WINDOWS 1\n");
+            config_content.push_str("#define DEFAULT_VISIBILITY\n");
+        }
+
+        config_content.push_str("#endif\n");
+        fs::write(&config_h_path, config_content).unwrap();
     }
-    None
+
+    println!("cargo:include={}", include_dir.to_str().unwrap());
+
+    // Build libusb using cc
+    let mut base_config = cc::Build::new();
+    base_config.include(&include_dir);
+    base_config.include(libusb_source.join("libusb"));
+
+    // Core libusb source files
+    base_config.file(libusb_source.join("libusb/core.c"));
+    base_config.file(libusb_source.join("libusb/descriptor.c"));
+    base_config.file(libusb_source.join("libusb/hotplug.c"));
+    base_config.file(libusb_source.join("libusb/io.c"));
+    base_config.file(libusb_source.join("libusb/strerror.c"));
+    base_config.file(libusb_source.join("libusb/sync.c"));
+
+    // Platform-specific configuration
+    if target_os == "macos" {
+        base_config.define("OS_DARWIN", Some("1"));
+        base_config.define("TARGET_OS_OSX", Some("1"));
+        base_config.file(libusb_source.join("libusb/os/darwin_usb.c"));
+        link_framework("CoreFoundation");
+        link_framework("IOKit");
+        link_framework("Security");
+        link("objc", false);
+    }
+
+    if target_os == "linux" {
+        base_config.define("OS_LINUX", Some("1"));
+        base_config.define("HAVE_ASM_TYPES_H", Some("1"));
+        base_config.define("_GNU_SOURCE", Some("1"));
+        base_config.define("HAVE_TIMERFD", Some("1"));
+        base_config.define("HAVE_EVENTFD", Some("1"));
+        base_config.file(libusb_source.join("libusb/os/linux_netlink.c"));
+        base_config.file(libusb_source.join("libusb/os/linux_usbfs.c"));
+    }
+
+    if target_family == "unix" {
+        base_config.define("HAVE_SYS_TIME_H", Some("1"));
+        base_config.define("HAVE_NFDS_T", Some("1"));
+        base_config.define("PLATFORM_POSIX", Some("1"));
+        base_config.define("HAVE_CLOCK_GETTIME", Some("1"));
+        base_config.define(
+            "DEFAULT_VISIBILITY",
+            Some("__attribute__((visibility(\"default\")))"),
+        );
+
+        if target_os != "android" {
+            if let Ok(lib) = pkg_config::probe_library("libudev") {
+                base_config.define("USE_UDEV", Some("1"));
+                base_config.define("HAVE_LIBUDEV", Some("1"));
+                base_config.file(libusb_source.join("libusb/os/linux_udev.c"));
+                for path in lib.include_paths {
+                    base_config.include(path.to_str().unwrap());
+                }
+            }
+        }
+
+        base_config.file(libusb_source.join("libusb/os/events_posix.c"));
+        base_config.file(libusb_source.join("libusb/os/threads_posix.c"));
+    }
+
+    if target_os == "windows" {
+        if target_env == "msvc" {
+            base_config.flag("/source-charset:utf-8");
+        }
+
+        base_config.warnings(false);
+        base_config.define("OS_WINDOWS", Some("1"));
+        base_config.define("DEFAULT_VISIBILITY", Some(""));
+        base_config.define("PLATFORM_WINDOWS", Some("1"));
+        base_config.file(libusb_source.join("libusb/os/events_windows.c"));
+        base_config.file(libusb_source.join("libusb/os/threads_windows.c"));
+        base_config.file(libusb_source.join("libusb/os/windows_common.c"));
+        base_config.file(libusb_source.join("libusb/os/windows_usbdk.c"));
+        base_config.file(libusb_source.join("libusb/os/windows_winusb.c"));
+
+        link("user32", false);
+    }
+
+    base_config.compile("usb-1.0");
+    println!("cargo:rustc-link-lib=static=usb-1.0");
 }
 
 fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &PathBuf) {
@@ -125,18 +214,13 @@ fn main() {
 
     let include_dir = root_dir.join("includes");
     let src_dir = root_dir.join("src");
-    let libusb_cmake_dir = root_dir.join("lib").join("libusb-cmake");
-    let libusb_include = libusb_cmake_dir.join("libusb").join("libusb");
+    let libusb_source = root_dir.join("lib").join("libusb-cmake").join("libusb");
+    let libusb_include = libusb_source.join("libusb");
 
-    // Build libusb from source using CMake
-    let build_dir = build_libusb_cmake(&libusb_cmake_dir);
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
 
-    // Find and copy DLL on Windows
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
-        if let Some(dll_path) = find_built_dll(&build_dir) {
-            copy_dll_to_output(&dll_path);
-        }
-    }
+    // Build libusb from source using cc (not cmake)
+    build_libusb(&libusb_source, &out_dir);
 
     // Build libefex
     build_libefex(&include_dir, &src_dir, &libusb_include);
