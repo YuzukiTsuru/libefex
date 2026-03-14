@@ -6,6 +6,10 @@ description = "Rust bindings for libefex"
 license = "MIT"
 edition = "2021"
 
+[features]
+vendored = ["libefex-sys/vendored"]
+vendored-shared = ["libefex-sys/vendored-shared"]
+
 [dependencies]
 libefex-sys = { path = "../libefex-sys" }
 thiserror = "1.0"
