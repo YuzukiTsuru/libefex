@@ -183,9 +183,23 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
 
-      - name: Build with features
+      - name: Build with features (Windows)
+        if: runner.os == 'Windows'
         working-directory: ./rust
-        shell: bash
+        shell: pwsh
+        run: |
+          $features = "${{ matrix.features }}"
+          if ([string]::IsNullOrEmpty($features)) {
+            Write-Host "Building without features (default mode)"
+            cargo build --release --target ${{ matrix.target }} -p libefex-sys
+          } else {
+            Write-Host "Building with features: $features"
+            cargo build --release --target ${{ matrix.target }} -p libefex-sys --features $features
+          }
+
+      - name: Build with features (Unix)
+        if: runner.os != 'Windows'
+        working-directory: ./rust
         run: |
           FEATURES="${{ matrix.features }}"
           if [ -z "$FEATURES" ]; then
@@ -196,9 +210,31 @@ jobs:
             cargo build --release --target ${{ matrix.target }} -p libefex-sys --features "$FEATURES"
           fi
 
-      - name: Verify build artifacts
+      - name: Verify build artifacts (Windows)
+        if: runner.os == 'Windows'
         working-directory: ./rust
-        shell: bash
+        shell: pwsh
+        run: |
+          $target = "${{ matrix.target }}"
+          $profile = "release"
+          $outDir = "target/$target/$profile"
+          
+          Write-Host "=== Build artifacts in $outDir ==="
+          
+          $dllPath = "$outDir/libusb-1.0.dll"
+          if (Test-Path $dllPath) {
+            Write-Host "✓ libusb-1.0.dll found (dynamic linking)"
+            Get-Item $dllPath | Format-List
+          } else {
+            Write-Host "✓ Static linking mode (no DLL)"
+          }
+          
+          Write-Host "=== libefex static library ==="
+          Get-ChildItem -Path target -Include "*.a","*.lib" -Recurse | Select-Object -First 20
+
+      - name: Verify build artifacts (Unix)
+        if: runner.os != 'Windows'
+        working-directory: ./rust
         run: |
           target="${{ matrix.target }}"
           profile="release"
@@ -206,14 +242,7 @@ jobs:
           
           echo "=== Build artifacts in $outDir ==="
           
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            if [ -f "$outDir/libusb-1.0.dll" ]; then
-              echo "✓ libusb-1.0.dll found (dynamic linking)"
-              ls -la "$outDir/libusb-1.0.dll"
-            else
-              echo "✓ Static linking mode (no DLL)"
-            fi
-          elif [ "${{ runner.os }}" = "macOS" ]; then
+          if [ "${{ runner.os }}" = "macOS" ]; then
             if [ -f "$outDir/libusb-1.0.dylib" ]; then
               echo "✓ libusb-1.0.dylib found (dynamic linking)"
               ls -la "$outDir/libusb-1.0.dylib"
@@ -230,11 +259,23 @@ jobs:
           fi
           
           echo "=== libefex static library ==="
-          find target -name "*.a" -o -name "*.lib" 2>/dev/null | head -20
+          find target -name "*.a" 2>/dev/null | head -20
 
-      - name: Run tests
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
         working-directory: ./rust
-        shell: bash
+        shell: pwsh
+        run: |
+          $features = "${{ matrix.features }}"
+          if ([string]::IsNullOrEmpty($features)) {
+            cargo test --release --target ${{ matrix.target }} -p libefex-sys
+          } else {
+            cargo test --release --target ${{ matrix.target }} -p libefex-sys --features $features
+          }
+
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        working-directory: ./rust
         run: |
           FEATURES="${{ matrix.features }}"
           if [ -z "$FEATURES" ]; then
