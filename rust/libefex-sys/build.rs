@@ -516,26 +516,50 @@ fn build_libusb_shared(libusb_source: &PathBuf) -> PathBuf {
     include_dir
 }
 
+fn get_target_dir() -> PathBuf {
+    if let Ok(target_dir) = env::var("CARGO_TARGET_DIR") {
+        return PathBuf::from(target_dir);
+    }
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+    let mut current = out_dir.as_path();
+    while let Some(parent) = current.parent() {
+        if parent.ends_with("target") {
+            return parent.to_path_buf();
+        }
+        if parent.file_name().map(|f| f == "target").unwrap_or(false) {
+            return parent.to_path_buf();
+        }
+        current = parent;
+    }
+
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    manifest_dir.join("target")
+}
+
 fn copy_dll_to_target(dll_path: &PathBuf) {
     let profile = env::var("PROFILE").unwrap();
     let target = env::var("TARGET").unwrap();
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    let manifest_path = PathBuf::from(&manifest_dir);
-    let src_tauri_dir = manifest_path.parent().unwrap().parent().unwrap();
+    let target_dir = get_target_dir();
+    let dest_dir = target_dir.join(&target).join(&profile);
 
-    let workspace_target = src_tauri_dir.join("target").join(&target).join(&profile);
-
-    if let Err(e) = fs::create_dir_all(&workspace_target) {
+    if let Err(e) = fs::create_dir_all(&dest_dir) {
         println!("cargo:warning=Failed to create target dir: {}", e);
+        return;
     }
 
-    let dest_dll = workspace_target.join("libusb-1.0.dll");
+    let dest_dll = dest_dir.join("libusb-1.0.dll");
     if dll_path.exists() {
-        if let Err(e) = fs::copy(dll_path, &dest_dll) {
-            println!("cargo:warning=Failed to copy DLL: {}", e);
-        } else {
-            println!("cargo:warning=Copied libusb-1.0.dll to {}", dest_dll.display());
+        match fs::copy(dll_path, &dest_dll) {
+            Ok(_) => {
+                println!("cargo:warning=Copied libusb-1.0.dll to {}", dest_dll.display());
+                println!("cargo:rerun-if-changed={}", dll_path.display());
+            }
+            Err(e) => {
+                println!("cargo:warning=Failed to copy DLL: {}", e);
+            }
         }
     }
 }
@@ -543,23 +567,25 @@ fn copy_dll_to_target(dll_path: &PathBuf) {
 fn copy_dylib_to_target(dylib_path: &PathBuf) {
     let profile = env::var("PROFILE").unwrap();
     let target = env::var("TARGET").unwrap();
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    let manifest_path = PathBuf::from(&manifest_dir);
-    let src_tauri_dir = manifest_path.parent().unwrap().parent().unwrap();
+    let target_dir = get_target_dir();
+    let dest_dir = target_dir.join(&target).join(&profile);
 
-    let workspace_target = src_tauri_dir.join("target").join(&target).join(&profile);
-
-    if let Err(e) = fs::create_dir_all(&workspace_target) {
+    if let Err(e) = fs::create_dir_all(&dest_dir) {
         println!("cargo:warning=Failed to create target dir: {}", e);
+        return;
     }
 
-    let dest_dylib = workspace_target.join("libusb-1.0.dylib");
+    let dest_dylib = dest_dir.join("libusb-1.0.dylib");
     if dylib_path.exists() {
-        if let Err(e) = fs::copy(dylib_path, &dest_dylib) {
-            println!("cargo:warning=Failed to copy dylib: {}", e);
-        } else {
-            println!("cargo:warning=Copied libusb-1.0.dylib to {}", dest_dylib.display());
+        match fs::copy(dylib_path, &dest_dylib) {
+            Ok(_) => {
+                println!("cargo:warning=Copied libusb-1.0.dylib to {}", dest_dylib.display());
+                println!("cargo:rerun-if-changed={}", dylib_path.display());
+            }
+            Err(e) => {
+                println!("cargo:warning=Failed to copy dylib: {}", e);
+            }
         }
     }
 }
@@ -567,23 +593,25 @@ fn copy_dylib_to_target(dylib_path: &PathBuf) {
 fn copy_so_to_target(so_path: &PathBuf) {
     let profile = env::var("PROFILE").unwrap();
     let target = env::var("TARGET").unwrap();
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    let manifest_path = PathBuf::from(&manifest_dir);
-    let src_tauri_dir = manifest_path.parent().unwrap().parent().unwrap();
+    let target_dir = get_target_dir();
+    let dest_dir = target_dir.join(&target).join(&profile);
 
-    let workspace_target = src_tauri_dir.join("target").join(&target).join(&profile);
-
-    if let Err(e) = fs::create_dir_all(&workspace_target) {
+    if let Err(e) = fs::create_dir_all(&dest_dir) {
         println!("cargo:warning=Failed to create target dir: {}", e);
+        return;
     }
 
-    let dest_so = workspace_target.join("libusb-1.0.so");
+    let dest_so = dest_dir.join("libusb-1.0.so");
     if so_path.exists() {
-        if let Err(e) = fs::copy(so_path, &dest_so) {
-            println!("cargo:warning=Failed to copy .so: {}", e);
-        } else {
-            println!("cargo:warning=Copied libusb-1.0.so to {}", dest_so.display());
+        match fs::copy(so_path, &dest_so) {
+            Ok(_) => {
+                println!("cargo:warning=Copied libusb-1.0.so to {}", dest_so.display());
+                println!("cargo:rerun-if-changed={}", so_path.display());
+            }
+            Err(e) => {
+                println!("cargo:warning=Failed to copy .so: {}", e);
+            }
         }
     }
 }
