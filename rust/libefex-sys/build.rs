@@ -19,18 +19,103 @@ fn link(name: &str, bundled: bool) {
     }
 }
 
-fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
+fn build_libusb_dylib_macos(libusb_source: &PathBuf, out_dir: &PathBuf) -> PathBuf {
     let include_dir = out_dir.join("include");
     fs::create_dir_all(&include_dir).unwrap();
 
-    // Copy libusb.h
     fs::copy(
         libusb_source.join("libusb/libusb.h"),
         include_dir.join("libusb.h"),
     )
     .unwrap();
 
-    // Create config.h
+    let config_h_path = include_dir.join("config.h");
+    
+    let mut config_content = String::new();
+    config_content.push_str("#ifndef CONFIG_H\n");
+    config_content.push_str("#define CONFIG_H\n");
+    config_content.push_str("#define PRINTF_FORMAT(a, b)\n");
+    config_content.push_str("#define ENABLE_LOGGING 1\n");
+    config_content.push_str("#define HAVE_SYS_TIME_H 1\n");
+    config_content.push_str("#define HAVE_NFDS_T 1\n");
+    config_content.push_str("#define PLATFORM_POSIX 1\n");
+    config_content.push_str("#define HAVE_CLOCK_GETTIME 1\n");
+    config_content.push_str("#define DEFAULT_VISIBILITY __attribute__((visibility(\"default\")))\n");
+    config_content.push_str("#define OS_DARWIN 1\n");
+    config_content.push_str("#define TARGET_OS_OSX 1\n");
+    config_content.push_str("#endif\n");
+    fs::write(&config_h_path, config_content).unwrap();
+
+    println!("cargo:include={}", include_dir.to_str().unwrap());
+
+    let mut build = cc::Build::new();
+    build.include(&include_dir);
+    build.include(libusb_source.join("libusb"));
+    build.define("OS_DARWIN", Some("1"));
+    build.define("TARGET_OS_OSX", Some("1"));
+    build.define("HAVE_SYS_TIME_H", Some("1"));
+    build.define("HAVE_NFDS_T", Some("1"));
+    build.define("PLATFORM_POSIX", Some("1"));
+    build.define("HAVE_CLOCK_GETTIME", Some("1"));
+    build.define(
+        "DEFAULT_VISIBILITY",
+        Some("__attribute__((visibility(\"default\")))"),
+    );
+
+    build.file(libusb_source.join("libusb/core.c"));
+    build.file(libusb_source.join("libusb/descriptor.c"));
+    build.file(libusb_source.join("libusb/hotplug.c"));
+    build.file(libusb_source.join("libusb/io.c"));
+    build.file(libusb_source.join("libusb/strerror.c"));
+    build.file(libusb_source.join("libusb/sync.c"));
+    build.file(libusb_source.join("libusb/os/darwin_usb.c"));
+    build.file(libusb_source.join("libusb/os/events_posix.c"));
+    build.file(libusb_source.join("libusb/os/threads_posix.c"));
+
+    build.compile("usb-1.0-static");
+
+    let target_dir = out_dir.join("dylib");
+    fs::create_dir_all(&target_dir).unwrap();
+
+    let dylib_path = target_dir.join("libusb-1.0.dylib");
+    let static_lib = out_dir.join("libusb-1.0-static.a");
+
+    link_framework("CoreFoundation");
+    link_framework("IOKit");
+    link_framework("Security");
+
+    let cc_status = std::process::Command::new("cc")
+        .args([
+            "-dynamiclib",
+            "-o", dylib_path.to_str().unwrap(),
+            "-install_name", "@rpath/libusb-1.0.dylib",
+            static_lib.to_str().unwrap(),
+            "-framework", "CoreFoundation",
+            "-framework", "IOKit",
+            "-framework", "Security",
+            "-lobjc",
+        ])
+        .current_dir(&target_dir)
+        .status()
+        .expect("Failed to run cc");
+    
+    if !cc_status.success() {
+        panic!("Failed to create dylib");
+    }
+
+    dylib_path
+}
+
+fn build_libusb_static(libusb_source: &PathBuf, out_dir: &PathBuf) -> PathBuf {
+    let include_dir = out_dir.join("include");
+    fs::create_dir_all(&include_dir).unwrap();
+
+    fs::copy(
+        libusb_source.join("libusb/libusb.h"),
+        include_dir.join("libusb.h"),
+    )
+    .unwrap();
+
     let config_h_path = include_dir.join("config.h");
 
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
@@ -38,14 +123,12 @@ fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
     let target_family = std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
 
     if target_os == "windows" && target_env == "msvc" {
-        // Use MSVC config
         fs::copy(
             libusb_source.join("msvc/config.h"),
             &config_h_path,
         )
         .unwrap();
     } else {
-        // Create a minimal config.h for other platforms
         let mut config_content = String::new();
 
         config_content.push_str("#ifndef CONFIG_H\n");
@@ -86,12 +169,10 @@ fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
 
     println!("cargo:include={}", include_dir.to_str().unwrap());
 
-    // Build libusb using cc
     let mut base_config = cc::Build::new();
     base_config.include(&include_dir);
     base_config.include(libusb_source.join("libusb"));
 
-    // Core libusb source files
     base_config.file(libusb_source.join("libusb/core.c"));
     base_config.file(libusb_source.join("libusb/descriptor.c"));
     base_config.file(libusb_source.join("libusb/hotplug.c"));
@@ -99,7 +180,6 @@ fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
     base_config.file(libusb_source.join("libusb/strerror.c"));
     base_config.file(libusb_source.join("libusb/sync.c"));
 
-    // Platform-specific configuration
     if target_os == "macos" {
         base_config.define("OS_DARWIN", Some("1"));
         base_config.define("TARGET_OS_OSX", Some("1"));
@@ -163,8 +243,175 @@ fn build_libusb(libusb_source: &PathBuf, out_dir: &PathBuf) {
         link("user32", false);
     }
 
-    base_config.compile("usb-1.0");
-    println!("cargo:rustc-link-lib=static=usb-1.0");
+    let lib_name = "usb-1.0";
+    base_config.compile(lib_name);
+    
+    out_dir.join(format!("lib{}.a", lib_name))
+}
+
+fn build_libusb_dll(libusb_source: &PathBuf, out_dir: &PathBuf, target_env: &str) -> Option<PathBuf> {
+    let include_dir = out_dir.join("include");
+    fs::create_dir_all(&include_dir).unwrap();
+
+    fs::copy(
+        libusb_source.join("libusb/libusb.h"),
+        include_dir.join("libusb.h"),
+    )
+    .unwrap();
+
+    let config_h_path = include_dir.join("config.h");
+    fs::copy(
+        libusb_source.join("msvc/config.h"),
+        &config_h_path,
+    )
+    .unwrap();
+
+    println!("cargo:include={}", include_dir.to_str().unwrap());
+
+    let mut build = cc::Build::new();
+    build.include(&include_dir);
+    build.include(libusb_source.join("libusb"));
+
+    build.file(libusb_source.join("libusb/core.c"));
+    build.file(libusb_source.join("libusb/descriptor.c"));
+    build.file(libusb_source.join("libusb/hotplug.c"));
+    build.file(libusb_source.join("libusb/io.c"));
+    build.file(libusb_source.join("libusb/strerror.c"));
+    build.file(libusb_source.join("libusb/sync.c"));
+
+    if target_env == "msvc" {
+        build.flag("/source-charset:utf-8");
+    }
+
+    build.warnings(false);
+    build.define("OS_WINDOWS", Some("1"));
+    build.define("DEFAULT_VISIBILITY", Some(""));
+    build.define("PLATFORM_WINDOWS", Some("1"));
+    build.file(libusb_source.join("libusb/os/events_windows.c"));
+    build.file(libusb_source.join("libusb/os/threads_windows.c"));
+    build.file(libusb_source.join("libusb/os/windows_common.c"));
+    build.file(libusb_source.join("libusb/os/windows_usbdk.c"));
+    build.file(libusb_source.join("libusb/os/windows_winusb.c"));
+
+    build.compile("usb-1.0-static");
+
+    let target_dir = out_dir.join("dll");
+    fs::create_dir_all(&target_dir).unwrap();
+
+    let dll_path = target_dir.join("libusb-1.0.dll");
+    let lib_path = target_dir.join("libusb-1.0.lib");
+    let def_path = libusb_source.join("libusb/libusb-1.0.def");
+
+    let static_lib = if target_env == "msvc" {
+        out_dir.join("usb-1.0-static.lib")
+    } else {
+        out_dir.join("libusb-1.0-static.a")
+    };
+    
+    if target_env == "msvc" {
+        let has_rc = std::process::Command::new("rc")
+            .arg("--help")
+            .output()
+            .is_ok();
+        
+        let has_link = std::process::Command::new("link")
+            .arg("--help")
+            .output()
+            .is_ok();
+        
+        if !has_link {
+            println!("cargo:warning=link.exe not found, falling back to static linking");
+            return None;
+        }
+
+        let rc_path = libusb_source.join("libusb/libusb-1.0.rc");
+        let rc_obj = target_dir.join("libusb-1.0.res");
+        
+        let mut link_args = vec![
+            "/DLL".to_string(),
+            format!("/OUT:{}", dll_path.display()),
+            format!("/DEF:{}", def_path.display()),
+            format!("/IMPLIB:{}", lib_path.display()),
+            static_lib.display().to_string(),
+            "user32.lib".to_string(),
+            "kernel32.lib".to_string(),
+            "advapi32.lib".to_string(),
+        ];
+
+        if has_rc {
+            let rc_status = std::process::Command::new("rc")
+                .args(["/fo", rc_obj.to_str().unwrap(), rc_path.to_str().unwrap()])
+                .current_dir(libusb_source.join("libusb"))
+                .status()
+                .expect("Failed to run rc");
+            
+            if rc_status.success() {
+                link_args.push(rc_obj.display().to_string());
+            }
+        }
+
+        let link_status = std::process::Command::new("link")
+            .args(&link_args)
+            .current_dir(&target_dir)
+            .status()
+            .expect("Failed to run link");
+        
+        if !link_status.success() {
+            println!("cargo:warning=link.exe failed, falling back to static linking");
+            return None;
+        }
+    } else {
+        let has_dlltool = std::process::Command::new("dlltool")
+            .arg("--help")
+            .output()
+            .is_ok();
+        
+        let has_gcc = std::process::Command::new("gcc")
+            .arg("--help")
+            .output()
+            .is_ok();
+        
+        if !has_dlltool || !has_gcc {
+            println!("cargo:warning=dlltool or gcc not found, falling back to static linking");
+            return None;
+        }
+
+        let dlltool_status = std::process::Command::new("dlltool")
+            .args([
+                "-d", def_path.to_str().unwrap(),
+                "-l", lib_path.to_str().unwrap(),
+                "-D", dll_path.to_str().unwrap(),
+            ])
+            .current_dir(&target_dir)
+            .status()
+            .expect("Failed to run dlltool");
+        
+        if !dlltool_status.success() {
+            println!("cargo:warning=dlltool failed, falling back to static linking");
+            return None;
+        }
+
+        let gcc_status = std::process::Command::new("gcc")
+            .args([
+                "-shared",
+                "-o", dll_path.to_str().unwrap(),
+                static_lib.to_str().unwrap(),
+                "-luser32",
+                "-lkernel32",
+                "-ladvapi32",
+                "-Wl,--out-implib", lib_path.to_str().unwrap(),
+            ])
+            .current_dir(&target_dir)
+            .status()
+            .expect("Failed to run gcc");
+        
+        if !gcc_status.success() {
+            println!("cargo:warning=gcc failed, falling back to static linking");
+            return None;
+        }
+    }
+
+    Some(dll_path)
 }
 
 fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &PathBuf) {
@@ -219,9 +466,73 @@ fn main() {
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
 
-    // Build libusb from source using cc (not cmake)
-    build_libusb(&libusb_source, &out_dir);
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
 
-    // Build libefex
+    if target_os == "windows" {
+        if let Some(dll_path) = build_libusb_dll(&libusb_source, &out_dir, &target_env) {
+            let dll_dir = dll_path.parent().unwrap();
+            println!("cargo:rustc-link-search=native={}", dll_dir.display());
+            println!("cargo:rustc-link-lib=dylib=usb-1.0");
+
+            let profile = env::var("PROFILE").unwrap();
+            let target = env::var("TARGET").unwrap();
+            let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+            
+            let manifest_path = PathBuf::from(&manifest_dir);
+            let src_tauri_dir = manifest_path
+                .parent().unwrap()
+                .parent().unwrap();
+            
+            let workspace_target = src_tauri_dir
+                .join("target")
+                .join(&target)
+                .join(&profile);
+            
+            fs::create_dir_all(&workspace_target).ok();
+            let dest_dll = workspace_target.join("libusb-1.0.dll");
+            if dll_path.exists() {
+                fs::copy(&dll_path, &dest_dll).expect("Failed to copy DLL to target directory");
+                println!("cargo:warning=Copied libusb-1.0.dll to {}", dest_dll.display());
+            }
+            
+            println!("cargo:rerun-if-changed={}", dll_path.display());
+        } else {
+            println!("cargo:rustc-link-lib=static=usb-1.0-static");
+        }
+    } else if target_os == "macos" {
+        let dylib_path = build_libusb_dylib_macos(&libusb_source, &out_dir);
+        
+        let dylib_dir = dylib_path.parent().unwrap();
+        println!("cargo:rustc-link-search=native={}", dylib_dir.display());
+        println!("cargo:rustc-link-lib=dylib=usb-1.0");
+
+        let profile = env::var("PROFILE").unwrap();
+        let target = env::var("TARGET").unwrap();
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        
+        let manifest_path = PathBuf::from(&manifest_dir);
+        let src_tauri_dir = manifest_path
+            .parent().unwrap()
+            .parent().unwrap();
+        
+        let workspace_target = src_tauri_dir
+            .join("target")
+            .join(&target)
+            .join(&profile);
+        
+        fs::create_dir_all(&workspace_target).ok();
+        let dest_dylib = workspace_target.join("libusb-1.0.dylib");
+        if dylib_path.exists() {
+            fs::copy(&dylib_path, &dest_dylib).expect("Failed to copy dylib to target directory");
+            println!("cargo:warning=Copied libusb-1.0.dylib to {}", dest_dylib.display());
+        }
+        
+        println!("cargo:rerun-if-changed={}", dylib_path.display());
+    } else {
+        build_libusb_static(&libusb_source, &out_dir);
+        println!("cargo:rustc-link-lib=static=usb-1.0");
+    }
+
     build_libefex(&include_dir, &src_dir, &libusb_include);
 }
