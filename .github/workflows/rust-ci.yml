@@ -85,8 +85,10 @@ jobs:
             $fileInfo = Get-Item $dllPath
             Write-Host "  Size: $($fileInfo.Length) bytes"
           } else {
-            Write-Host "⚠ libusb-1.0.dll not found (static linking fallback)"
+            Write-Host "✗ ERROR: libusb-1.0.dll not found!"
             Write-Host "  Expected path: $dllPath"
+            Write-Host "  vendored-shared feature requires dynamic library output"
+            exit 1
           }
 
       - name: Check libusb output (macOS)
@@ -101,8 +103,10 @@ jobs:
             ls -la "$dylibPath"
             file "$dylibPath"
           else
-            echo "⚠ libusb-1.0.dylib not found (static linking fallback)"
+            echo "✗ ERROR: libusb-1.0.dylib not found!"
             echo "  Expected path: $dylibPath"
+            echo "  vendored-shared feature requires dynamic library output"
+            exit 1
           fi
 
       - name: Check libusb output (Linux)
@@ -117,8 +121,10 @@ jobs:
             ls -la "$soPath"
             file "$soPath"
           else
-            echo "⚠ libusb-1.0.so not found (static linking fallback)"
+            echo "✗ ERROR: libusb-1.0.so not found!"
             echo "  Expected path: $soPath"
+            echo "  vendored-shared feature requires dynamic library output"
+            exit 1
           fi
 
       - name: Check
