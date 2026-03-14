@@ -11,7 +11,7 @@ libefex is a cross-platform library for interacting with Sunxi chips in both FEL
 - Support for multiple processor architectures (ARM32, AARCH64, RISC-V32 E907)
 - C language API interface
 - Python bindings - WIP
-- Rust bindings - WIP
+- Rust bindings
 
 ## Build Guide
 
@@ -50,6 +50,53 @@ To build with static libusb:
 ```bash
 cmake -DLIBEFEX_USE_SHARED_LIBUSB=OFF ..
 ```
+
+## Rust Bindings
+
+Rust bindings are available in the `rust/` directory.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| (default) | Link against system libusb, fallback to vendored static build |
+| `vendored` | Build libusb from source as static library |
+| `vendored-shared` | Build libusb from source as shared library (LGPL compatible) |
+
+### Usage
+
+```toml
+# In your Cargo.toml
+[dependencies]
+libefex-sys = { path = "path/to/libefex/rust/libefex-sys" }
+
+# For LGPL compliance (dynamic linking)
+libefex-sys = { path = "path/to/libefex/rust/libefex-sys", features = ["vendored-shared"] }
+```
+
+### Build
+
+```bash
+cd rust
+
+# Default build (uses system libusb or static vendored)
+cargo build
+
+# Force static vendored build
+cargo build --features vendored
+
+# Build with shared library (LGPL compatible)
+cargo build --features vendored-shared
+```
+
+### Windows Requirements
+
+For `vendored-shared` on Windows, you need to build from **Visual Studio Developer Command Prompt** or ensure `link.exe` and `rc.exe` are in PATH.
+
+### License Compliance
+
+- **Static linking** (`vendored` or default fallback): Your application may be subject to LGPL requirements
+- **Dynamic linking** (`vendored-shared`): LGPL compliant, the shared library can be replaced by users
 
 ## License
 
