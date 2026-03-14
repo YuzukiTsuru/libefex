@@ -79,11 +79,20 @@ jobs:
           $target = "${{ matrix.target }}"
           $profile = "release"
           $dllPath = "rust/target/$target/$profile/libusb-1.0.dll"
+          $minSize = 50000
           
           if (Test-Path $dllPath) {
-            Write-Host "✓ libusb-1.0.dll found at: $dllPath"
             $fileInfo = Get-Item $dllPath
-            Write-Host "  Size: $($fileInfo.Length) bytes"
+            $size = $fileInfo.Length
+            Write-Host "✓ libusb-1.0.dll found at: $dllPath"
+            Write-Host "  Size: $size bytes"
+            
+            if ($size -lt $minSize) {
+              Write-Host "✗ ERROR: DLL size ($size bytes) is too small (minimum: $minSize bytes)"
+              Write-Host "  The DLL may be corrupted or incomplete"
+              exit 1
+            }
+            Write-Host "✓ DLL size check passed ($size >= $minSize bytes)"
           } else {
             Write-Host "✗ ERROR: libusb-1.0.dll not found!"
             Write-Host "  Expected path: $dllPath"
@@ -97,11 +106,21 @@ jobs:
           target="${{ matrix.target }}"
           profile="release"
           dylibPath="rust/target/$target/$profile/libusb-1.0.dylib"
+          minSize=50000
           
           if [ -f "$dylibPath" ]; then
+            size=$(stat -f%z "$dylibPath")
             echo "✓ libusb-1.0.dylib found at: $dylibPath"
+            echo "  Size: $size bytes"
             ls -la "$dylibPath"
             file "$dylibPath"
+            
+            if [ "$size" -lt "$minSize" ]; then
+              echo "✗ ERROR: dylib size ($size bytes) is too small (minimum: $minSize bytes)"
+              echo "  The dylib may be corrupted or incomplete"
+              exit 1
+            fi
+            echo "✓ dylib size check passed ($size >= $minSize bytes)"
           else
             echo "✗ ERROR: libusb-1.0.dylib not found!"
             echo "  Expected path: $dylibPath"
@@ -115,11 +134,21 @@ jobs:
           target="${{ matrix.target }}"
           profile="release"
           soPath="rust/target/$target/$profile/libusb-1.0.so"
+          minSize=50000
           
           if [ -f "$soPath" ]; then
+            size=$(stat -c%s "$soPath")
             echo "✓ libusb-1.0.so found at: $soPath"
+            echo "  Size: $size bytes"
             ls -la "$soPath"
             file "$soPath"
+            
+            if [ "$size" -lt "$minSize" ]; then
+              echo "✗ ERROR: .so size ($size bytes) is too small (minimum: $minSize bytes)"
+              echo "  The shared library may be corrupted or incomplete"
+              exit 1
+            fi
+            echo "✓ .so size check passed ($size >= $minSize bytes)"
           else
             echo "✗ ERROR: libusb-1.0.so not found!"
             echo "  Expected path: $soPath"
@@ -224,14 +253,31 @@ jobs:
           $target = "${{ matrix.target }}"
           $profile = "release"
           $outDir = "target/$target/$profile"
+          $features = "${{ matrix.features }}"
+          $minSize = 50000
           
           Write-Host "=== Build artifacts in $outDir ==="
           
           $dllPath = "$outDir/libusb-1.0.dll"
           if (Test-Path $dllPath) {
+            $fileInfo = Get-Item $dllPath
+            $size = $fileInfo.Length
             Write-Host "✓ libusb-1.0.dll found (dynamic linking)"
-            Get-Item $dllPath | Format-List
+            Write-Host "  Size: $size bytes"
+            
+            if ($features -eq "vendored-shared") {
+              if ($size -lt $minSize) {
+                Write-Host "✗ ERROR: DLL size ($size bytes) is too small (minimum: $minSize bytes)"
+                Write-Host "  The DLL may be corrupted or incomplete"
+                exit 1
+              }
+              Write-Host "✓ DLL size check passed ($size >= $minSize bytes)"
+            }
           } else {
+            if ($features -eq "vendored-shared") {
+              Write-Host "✗ ERROR: vendored-shared requires DLL output!"
+              exit 1
+            }
             Write-Host "✓ Static linking mode (no DLL)"
           }
           
@@ -245,21 +291,53 @@ jobs:
           target="${{ matrix.target }}"
           profile="release"
           outDir="target/$target/$profile"
+          features="${{ matrix.features }}"
+          minSize=50000
           
           echo "=== Build artifacts in $outDir ==="
           
           if [ "${{ runner.os }}" = "macOS" ]; then
-            if [ -f "$outDir/libusb-1.0.dylib" ]; then
+            dylibPath="$outDir/libusb-1.0.dylib"
+            if [ -f "$dylibPath" ]; then
+              size=$(stat -f%z "$dylibPath")
               echo "✓ libusb-1.0.dylib found (dynamic linking)"
-              ls -la "$outDir/libusb-1.0.dylib"
+              echo "  Size: $size bytes"
+              ls -la "$dylibPath"
+              
+              if [ "$features" = "vendored-shared" ]; then
+                if [ "$size" -lt "$minSize" ]; then
+                  echo "✗ ERROR: dylib size ($size bytes) is too small (minimum: $minSize bytes)"
+                  exit 1
+                fi
+                echo "✓ dylib size check passed ($size >= $minSize bytes)"
+              fi
             else
+              if [ "$features" = "vendored-shared" ]; then
+                echo "✗ ERROR: vendored-shared requires dylib output!"
+                exit 1
+              fi
               echo "✓ Static linking mode (no dylib)"
             fi
           elif [ "${{ runner.os }}" = "Linux" ]; then
-            if [ -f "$outDir/libusb-1.0.so" ]; then
+            soPath="$outDir/libusb-1.0.so"
+            if [ -f "$soPath" ]; then
+              size=$(stat -c%s "$soPath")
               echo "✓ libusb-1.0.so found (dynamic linking)"
-              ls -la "$outDir/libusb-1.0.so"
+              echo "  Size: $size bytes"
+              ls -la "$soPath"
+              
+              if [ "$features" = "vendored-shared" ]; then
+                if [ "$size" -lt "$minSize" ]; then
+                  echo "✗ ERROR: .so size ($size bytes) is too small (minimum: $minSize bytes)"
+                  exit 1
+                fi
+                echo "✓ .so size check passed ($size >= $minSize bytes)"
+              fi
             else
+              if [ "$features" = "vendored-shared" ]; then
+                echo "✗ ERROR: vendored-shared requires .so output!"
+                exit 1
+              fi
               echo "✓ Static linking mode (no .so)"
             fi
           fi
