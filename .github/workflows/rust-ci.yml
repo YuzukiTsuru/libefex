@@ -15,26 +15,21 @@ jobs:
 
       matrix:
         include:
-          # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          # Windows ARM64
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-          # macOS ARM64
           - os: macos-latest
             target: aarch64-apple-darwin
-          # Linux x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          # Linux ARM64
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
 
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          submodules: "recursive"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -52,14 +47,55 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
+      - name: Setup MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install dependencies on Ubuntu
-        if: startsWith(matrix.os, 'ubuntu')
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
 
       - name: Build
         working-directory: ./rust
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Check libusb output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $target = "${{ matrix.target }}"
+          $profile = "release"
+          $dllPath = "rust/target/$target/$profile/libusb-1.0.dll"
+          
+          if (Test-Path $dllPath) {
+            Write-Host "✓ libusb-1.0.dll found at: $dllPath"
+            $fileInfo = Get-Item $dllPath
+            Write-Host "  Size: $($fileInfo.Length) bytes"
+          } else {
+            Write-Host "⚠ libusb-1.0.dll not found (static linking fallback)"
+            Write-Host "  Expected path: $dllPath"
+          }
+
+      - name: Check libusb output (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          target="${{ matrix.target }}"
+          profile="release"
+          dylibPath="rust/target/$target/$profile/libusb-1.0.dylib"
+          
+          if [ -f "$dylibPath" ]; then
+            echo "✓ libusb-1.0.dylib found at: $dylibPath"
+            ls -la "$dylibPath"
+            file "$dylibPath"
+          else
+            echo "⚠ libusb-1.0.dylib not found (static linking fallback)"
+            echo "  Expected path: $dylibPath"
+          fi
+
       - name: Check
         working-directory: ./rust
         run: cargo check --release --target ${{ matrix.target }}
+
+      - name: Run tests
+        working-directory: ./rust
+        run: cargo test --release --target ${{ matrix.target }}

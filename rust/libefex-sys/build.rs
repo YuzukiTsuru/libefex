@@ -350,14 +350,16 @@ fn build_libusb_dll(libusb_source: &PathBuf, out_dir: &PathBuf, target_env: &str
             }
         }
 
-        let link_status = std::process::Command::new("link")
+        let link_output = std::process::Command::new("link")
             .args(&link_args)
             .current_dir(&target_dir)
-            .status()
+            .output()
             .expect("Failed to run link");
         
-        if !link_status.success() {
+        if !link_output.status.success() {
             println!("cargo:warning=link.exe failed, falling back to static linking");
+            println!("cargo:warning=link.exe stdout: {}", String::from_utf8_lossy(&link_output.stdout));
+            println!("cargo:warning=link.exe stderr: {}", String::from_utf8_lossy(&link_output.stderr));
             return None;
         }
     } else {
