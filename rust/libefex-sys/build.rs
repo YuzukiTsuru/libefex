@@ -342,7 +342,7 @@ fn build_libusb_shared(libusb_source: &PathBuf) -> PathBuf {
 
         if target_env == "msvc" {
             let dll_path = shared_dir.join("libusb-1.0.dll");
-            let lib_path = shared_dir.join("libusb-1.0.lib");
+            let lib_path = shared_dir.join("usb-1.0.lib");
             let rc_path = libusb_source.join("libusb/libusb-1.0.rc");
             let rc_obj = shared_dir.join("libusb-1.0.res");
 
@@ -382,7 +382,6 @@ fn build_libusb_shared(libusb_source: &PathBuf) -> PathBuf {
 
             let link_output = std::process::Command::new("link")
                 .args(&link_args)
-                .current_dir(&shared_dir)
                 .output()
                 .expect("Failed to run link.exe");
 
@@ -393,70 +392,28 @@ fn build_libusb_shared(libusb_source: &PathBuf) -> PathBuf {
                 return include_dir;
             }
 
+            let actual_lib = if lib_path.exists() {
+                lib_path.clone()
+            } else {
+                let alt_lib = shared_dir.join("libusb-1.0.lib");
+                if alt_lib.exists() {
+                    println!("cargo:warning=Import library generated as {} instead of {}", alt_lib.display(), lib_path.display());
+                    alt_lib
+                } else {
+                    println!("cargo:warning=Import library not found, falling back to static linking");
+                    println!("cargo:rustc-link-lib=static=usb-1.0-static");
+                    return include_dir;
+                }
+            };
+
             println!("cargo:rustc-link-search=native={}", shared_dir.display());
-            println!("cargo:rustc-link-lib=dylib=usb-1.0");
+            println!("cargo:rustc-link-lib=static={}", actual_lib.file_stem().unwrap().to_str().unwrap());
 
             copy_dll_to_target(&dll_path);
         } else {
-            let dll_path = shared_dir.join("libusb-1.0.dll");
-            let lib_path = shared_dir.join("libusb-1.0.lib");
-
-            let has_dlltool = std::process::Command::new("dlltool")
-                .arg("--help")
-                .output()
-                .is_ok();
-
-            let has_gcc = std::process::Command::new("gcc")
-                .arg("--help")
-                .output()
-                .is_ok();
-
-            if !has_dlltool || !has_gcc {
-                println!("cargo:warning=dlltool or gcc not found, falling back to static linking");
-                println!("cargo:rustc-link-lib=static=usb-1.0-static");
-                return include_dir;
-            }
-
-            let dlltool_status = std::process::Command::new("dlltool")
-                .args([
-                    "-d", def_path.to_str().unwrap(),
-                    "-l", lib_path.to_str().unwrap(),
-                    "-D", dll_path.to_str().unwrap(),
-                ])
-                .current_dir(&shared_dir)
-                .status()
-                .expect("Failed to run dlltool");
-
-            if !dlltool_status.success() {
-                println!("cargo:warning=dlltool failed, falling back to static linking");
-                println!("cargo:rustc-link-lib=static=usb-1.0-static");
-                return include_dir;
-            }
-
-            let gcc_status = std::process::Command::new("gcc")
-                .args([
-                    "-shared",
-                    "-o", dll_path.to_str().unwrap(),
-                    static_lib.to_str().unwrap(),
-                    "-luser32",
-                    "-lkernel32",
-                    "-ladvapi32",
-                    "-Wl,--out-implib", lib_path.to_str().unwrap(),
-                ])
-                .current_dir(&shared_dir)
-                .status()
-                .expect("Failed to run gcc");
-
-            if !gcc_status.success() {
-                println!("cargo:warning=gcc failed, falling back to static linking");
-                println!("cargo:rustc-link-lib=static=usb-1.0-static");
-                return include_dir;
-            }
-
-            println!("cargo:rustc-link-search=native={}", shared_dir.display());
-            println!("cargo:rustc-link-lib=dylib=usb-1.0");
-
-            copy_dll_to_target(&dll_path);
+            println!("cargo:warning=Windows GNU target not supported for shared library, falling back to static linking");
+            println!("cargo:rustc-link-lib=static=usb-1.0-static");
+            return include_dir;
         }
     } else if target_os == "macos" {
         let dylib_path = shared_dir.join("libusb-1.0.dylib");
