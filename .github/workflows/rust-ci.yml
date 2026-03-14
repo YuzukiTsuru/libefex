@@ -55,9 +55,17 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
 
-      - name: Build
+      - name: Build (default)
         working-directory: ./rust
         run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (vendored - static)
+        working-directory: ./rust
+        run: cargo build --release --target ${{ matrix.target }} -p libefex-sys --features vendored
+
+      - name: Build (vendored-shared - dynamic)
+        working-directory: ./rust
+        run: cargo build --release --target ${{ matrix.target }} -p libefex-sys --features vendored-shared
 
       - name: Check libusb output (Windows)
         if: runner.os == 'Windows'
@@ -92,6 +100,22 @@ jobs:
             echo "  Expected path: $dylibPath"
           fi
 
+      - name: Check libusb output (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          target="${{ matrix.target }}"
+          profile="release"
+          soPath="rust/target/$target/$profile/libusb-1.0.so"
+          
+          if [ -f "$soPath" ]; then
+            echo "✓ libusb-1.0.so found at: $soPath"
+            ls -la "$soPath"
+            file "$soPath"
+          else
+            echo "⚠ libusb-1.0.so not found (static linking fallback)"
+            echo "  Expected path: $soPath"
+          fi
+
       - name: Check
         working-directory: ./rust
         run: cargo check --release --target ${{ matrix.target }}
@@ -99,3 +123,112 @@ jobs:
       - name: Run tests
         working-directory: ./rust
         run: cargo test --release --target ${{ matrix.target }}
+
+  feature-matrix:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        features:
+          - ""
+          - "vendored"
+          - "vendored-shared"
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./rust/target
+          key: ${{ runner.os }}-${{ matrix.target }}-feature-${{ matrix.features }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-feature-cargo-
+
+      - name: Setup MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+      - name: Build with features
+        working-directory: ./rust
+        shell: bash
+        run: |
+          FEATURES="${{ matrix.features }}"
+          if [ -z "$FEATURES" ]; then
+            echo "Building without features (default mode)"
+            cargo build --release --target ${{ matrix.target }} -p libefex-sys
+          else
+            echo "Building with features: $FEATURES"
+            cargo build --release --target ${{ matrix.target }} -p libefex-sys --features "$FEATURES"
+          fi
+
+      - name: Verify build artifacts
+        working-directory: ./rust
+        shell: bash
+        run: |
+          target="${{ matrix.target }}"
+          profile="release"
+          outDir="target/$target/$profile"
+          
+          echo "=== Build artifacts in $outDir ==="
+          
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            if [ -f "$outDir/libusb-1.0.dll" ]; then
+              echo "✓ libusb-1.0.dll found (dynamic linking)"
+              ls -la "$outDir/libusb-1.0.dll"
+            else
+              echo "✓ Static linking mode (no DLL)"
+            fi
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            if [ -f "$outDir/libusb-1.0.dylib" ]; then
+              echo "✓ libusb-1.0.dylib found (dynamic linking)"
+              ls -la "$outDir/libusb-1.0.dylib"
+            else
+              echo "✓ Static linking mode (no dylib)"
+            fi
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            if [ -f "$outDir/libusb-1.0.so" ]; then
+              echo "✓ libusb-1.0.so found (dynamic linking)"
+              ls -la "$outDir/libusb-1.0.so"
+            else
+              echo "✓ Static linking mode (no .so)"
+            fi
+          fi
+          
+          echo "=== libefex static library ==="
+          find target -name "*.a" -o -name "*.lib" 2>/dev/null | head -20
+
+      - name: Run tests
+        working-directory: ./rust
+        shell: bash
+        run: |
+          FEATURES="${{ matrix.features }}"
+          if [ -z "$FEATURES" ]; then
+            cargo test --release --target ${{ matrix.target }} -p libefex-sys --no-run
+          else
+            cargo test --release --target ${{ matrix.target }} -p libefex-sys --features "$FEATURES" --no-run
+          fi
