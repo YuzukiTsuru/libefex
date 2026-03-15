@@ -18,27 +18,18 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             can-run-tests: true
-            cross-compile: false
           - os: windows-latest
             target: aarch64-pc-windows-msvc
             can-run-tests: false
-            cross-compile: true
           - os: macos-latest
             target: aarch64-apple-darwin
             can-run-tests: true
-            cross-compile: false
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             can-run-tests: true
-            cross-compile: false
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            can-run-tests: false
-            cross-compile: true
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             can-run-tests: true
-            cross-compile: false
 
     steps:
       - uses: actions/checkout@v4
@@ -61,23 +52,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
-      - name: Install dependencies on Ubuntu (native)
-        if: runner.os == 'Linux' && matrix.cross-compile == false
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev cmake
-
-      - name: Install cross-compilation toolchain (Linux aarch64)
-        if: runner.os == 'Linux' && matrix.target == 'aarch64-unknown-linux-gnu' && matrix.cross-compile == true
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake
-
-      - name: Configure cross-compilation environment
-        if: runner.os == 'Linux' && matrix.cross-compile == true
-        run: |
-          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-          echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
       - name: Install CMake on Windows
         if: runner.os == 'Windows'
@@ -141,8 +118,8 @@ jobs:
             exit 1
           fi
 
-      - name: Check libusb output (Linux - native)
-        if: runner.os == 'Linux' && matrix.cross-compile == false
+      - name: Check libusb output (Linux)
+        if: runner.os == 'Linux'
         run: |
           target="${{ matrix.target }}"
           profile="release"
@@ -167,12 +144,6 @@ jobs:
             echo "  Expected path: $soPath"
             exit 1
           fi
-
-      - name: Check libusb output (Linux - cross)
-        if: runner.os == 'Linux' && matrix.cross-compile == true
-        run: |
-          echo "Cross-compilation detected, using static linking"
-          echo "✓ Static library linked successfully"
 
       - name: Check
         working-directory: ./rust
