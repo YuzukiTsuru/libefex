@@ -78,6 +78,36 @@ fn find_built_dll(build_dir: &PathBuf) -> Option<PathBuf> {
     None
 }
 
+fn find_built_dylib(build_dir: &PathBuf) -> Option<PathBuf> {
+    let search_paths = vec![
+        build_dir.join("lib").join("libusb-1.0.dylib"),
+        build_dir.join("lib").join("Release").join("libusb-1.0.dylib"),
+        build_dir.join("lib").join("Debug").join("libusb-1.0.dylib"),
+    ];
+
+    for path in search_paths {
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+fn find_built_so(build_dir: &PathBuf) -> Option<PathBuf> {
+    let search_paths = vec![
+        build_dir.join("lib").join("libusb-1.0.so"),
+        build_dir.join("lib").join("Release").join("libusb-1.0.so"),
+        build_dir.join("lib").join("Debug").join("libusb-1.0.so"),
+    ];
+
+    for path in search_paths {
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
 fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &PathBuf) {
     let mut c_files = vec![
         src_dir.join("efex-common.c"),
@@ -131,10 +161,19 @@ fn main() {
     // Build libusb from source using CMake
     let build_dir = build_libusb_cmake(&libusb_cmake_dir);
 
-    // Find and copy DLL on Windows
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
+    // Find and copy shared library to output directory
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    if target_os == "windows" {
         if let Some(dll_path) = find_built_dll(&build_dir) {
             copy_dll_to_output(&dll_path);
+        }
+    } else if target_os == "macos" {
+        if let Some(dylib_path) = find_built_dylib(&build_dir) {
+            copy_dll_to_output(&dylib_path);
+        }
+    } else if target_os == "linux" {
+        if let Some(so_path) = find_built_so(&build_dir) {
+            copy_dll_to_output(&so_path);
         }
     }
 
