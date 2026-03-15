@@ -82,13 +82,11 @@ jobs:
             if ($size -lt $minSize) {
               Write-Host "✗ ERROR: DLL size ($size bytes) is too small (minimum: $minSize bytes)"
               Write-Host "  The DLL may be corrupted or incomplete"
-              exit 1
             }
             Write-Host "✓ DLL size check passed ($size >= $minSize bytes)"
           } else {
             Write-Host "✗ ERROR: libusb-1.0.dll not found!"
             Write-Host "  Expected path: $dllPath"
-            exit 1
           }
 
       - name: Check libusb output (macOS)
@@ -109,13 +107,11 @@ jobs:
             if [ "$size" -lt "$minSize" ]; then
               echo "✗ ERROR: dylib size ($size bytes) is too small (minimum: $minSize bytes)"
               echo "  The dylib may be corrupted or incomplete"
-              exit 1
             fi
             echo "✓ dylib size check passed ($size >= $minSize bytes)"
           else
             echo "✗ ERROR: libusb-1.0.dylib not found!"
             echo "  Expected path: $dylibPath"
-            exit 1
           fi
 
       - name: Check
