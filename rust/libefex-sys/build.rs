@@ -12,7 +12,7 @@ fn is_cross_compiling() -> bool {
     host != target
 }
 
-fn build_libusb_static(libusb_cmake_dir: &PathBuf, include_dir: &PathBuf) {
+fn build_libusb_static(libusb_cmake_dir: &PathBuf) {
     let libusb_source = libusb_cmake_dir.join("libusb").join("libusb");
 
     println!("cargo:rerun-if-env-changed=LIBUSB_STATIC");
@@ -271,7 +271,7 @@ fn main() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
     if cross_compiling && target_os != "windows" {
-        build_libusb_static(&libusb_cmake_dir, &include_dir);
+        build_libusb_static(&libusb_cmake_dir);
     } else {
         let build_dir = build_libusb_cmake(&libusb_cmake_dir);
 
