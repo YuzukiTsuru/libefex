@@ -6,6 +6,119 @@ pub fn link_framework(name: &str) {
     println!("cargo:rustc-link-lib=framework={}", name);
 }
 
+fn is_cross_compiling() -> bool {
+    let host = env::var("HOST").unwrap_or_default();
+    let target = env::var("TARGET").unwrap_or_default();
+    host != target
+}
+
+fn build_libusb_static(libusb_cmake_dir: &PathBuf, include_dir: &PathBuf) {
+    let libusb_source = libusb_cmake_dir.join("libusb").join("libusb");
+
+    println!("cargo:rerun-if-env-changed=LIBUSB_STATIC");
+    println!("cargo:static=1");
+    println!("cargo:vendored=1");
+
+    let out_include = PathBuf::from(env::var("OUT_DIR").unwrap()).join("include");
+    fs::create_dir_all(&out_include).unwrap();
+    fs::copy(
+        libusb_source.join("libusb.h"),
+        out_include.join("libusb.h"),
+    ).ok();
+
+    let config_h_path = out_include.join("config.h");
+    fs::File::create(&config_h_path).unwrap();
+
+    let mut base_config = cc::Build::new();
+    base_config.include(&out_include);
+    base_config.include(&libusb_source);
+    base_config.include(&libusb_source.join("os"));
+
+    base_config.define("PRINTF_FORMAT(a, b)", Some(""));
+    base_config.define("ENABLE_LOGGING", Some("1"));
+
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
+
+    if target_env == "msvc" {
+        let msvc_config_h = libusb_cmake_dir.join("libusb").join("msvc").join("config.h");
+        if msvc_config_h.exists() {
+            fs::copy(&msvc_config_h, &config_h_path).unwrap();
+        }
+        base_config.flag("/source-charset:utf-8");
+    }
+
+    if target_os == "macos" {
+        base_config.define("OS_DARWIN", Some("1"));
+        base_config.define("TARGET_OS_OSX", Some("1"));
+        base_config.file(libusb_source.join("os/darwin_usb.c"));
+        link_framework("CoreFoundation");
+        link_framework("IOKit");
+        link_framework("Security");
+        println!("cargo:rustc-link-lib=dylib=objc");
+    }
+
+    if target_os == "linux" || target_os == "android" {
+        base_config.define("OS_LINUX", Some("1"));
+        base_config.define("HAVE_ASM_TYPES_H", Some("1"));
+        base_config.define("_GNU_SOURCE", Some("1"));
+        base_config.define("HAVE_TIMERFD", Some("1"));
+        base_config.define("HAVE_EVENTFD", Some("1"));
+        base_config.file(libusb_source.join("os/linux_netlink.c"));
+        base_config.file(libusb_source.join("os/linux_usbfs.c"));
+
+        if target_os != "android" {
+            base_config.define("USE_UDEV", Some("1"));
+            base_config.define("HAVE_LIBUDEV", Some("1"));
+            base_config.file(libusb_source.join("os/linux_udev.c"));
+            println!("cargo:rustc-link-lib=dylib=udev");
+        }
+    }
+
+    if target_family == "unix" {
+        base_config.define("HAVE_SYS_TIME_H", Some("1"));
+        base_config.define("HAVE_NFDS_T", Some("1"));
+        base_config.define("PLATFORM_POSIX", Some("1"));
+        base_config.define("HAVE_CLOCK_GETTIME", Some("1"));
+        base_config.define(
+            "DEFAULT_VISIBILITY",
+            Some("__attribute__((visibility(\"default\")))"),
+        );
+
+        base_config.file(libusb_source.join("os/events_posix.c"));
+        base_config.file(libusb_source.join("os/threads_posix.c"));
+    }
+
+    if target_os == "windows" {
+        if target_env == "msvc" {
+            base_config.flag("/source-charset:utf-8");
+        }
+
+        base_config.warnings(false);
+        base_config.define("OS_WINDOWS", Some("1"));
+        base_config.file(libusb_source.join("os/events_windows.c"));
+        base_config.file(libusb_source.join("os/threads_windows.c"));
+        base_config.file(libusb_source.join("os/windows_common.c"));
+        base_config.file(libusb_source.join("os/windows_usbdk.c"));
+        base_config.file(libusb_source.join("os/windows_winusb.c"));
+
+        base_config.define("DEFAULT_VISIBILITY", Some(""));
+        base_config.define("PLATFORM_WINDOWS", Some("1"));
+        println!("cargo:rustc-link-lib=dylib=user32");
+    }
+
+    base_config.file(libusb_source.join("core.c"));
+    base_config.file(libusb_source.join("descriptor.c"));
+    base_config.file(libusb_source.join("hotplug.c"));
+    base_config.file(libusb_source.join("io.c"));
+    base_config.file(libusb_source.join("strerror.c"));
+    base_config.file(libusb_source.join("sync.c"));
+
+    base_config.compile("usb-1.0-static");
+    println!("cargo:rustc-link-lib=static=usb-1.0-static");
+}
+
 fn build_libusb_cmake(libusb_cmake_dir: &PathBuf) -> PathBuf {
     let mut cmake_config = cmake::Config::new(libusb_cmake_dir);
     cmake_config
@@ -14,20 +127,17 @@ fn build_libusb_cmake(libusb_cmake_dir: &PathBuf) -> PathBuf {
         .define("LIBUSB_BUILD_EXAMPLES", "OFF")
         .define("LIBUSB_ENABLE_LOGGING", "ON");
 
-    // Platform-specific options
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("linux".into()) {
+    if env::var("CARGO_CFG_TARGET_OS") == Ok("linux".into()) {
         cmake_config.define("LIBUSB_ENABLE_UDEV", "ON");
     }
 
     let dst = cmake_config.build();
 
-    // The library output location depends on the platform and generator
     let lib_dir = dst.join("lib");
     if lib_dir.exists() {
         println!("cargo:rustc-link-search=native={}", lib_dir.display());
     }
 
-    // Also check for multi-config generators (like Visual Studio)
     for config in &["Release", "Debug", ""] {
         let config_dir = if config.is_empty() {
             dst.join("lib")
@@ -39,7 +149,6 @@ fn build_libusb_cmake(libusb_cmake_dir: &PathBuf) -> PathBuf {
         }
     }
 
-    // Link the library
     println!("cargo:rustc-link-lib=dylib=usb-1.0");
 
     dst
@@ -122,7 +231,7 @@ fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &Path
         src_dir.join("arch/riscv.c"),
     ];
 
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
+    if env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
         c_files.push(src_dir.join("usb/usb_layer_winusb.c"));
     }
 
@@ -131,7 +240,7 @@ fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &Path
     builder.include(libusb_include);
     builder.files(&c_files);
 
-    if std::env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
+    if env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
         builder.define("_CRT_SECURE_NO_WARNINGS", None);
         builder.warnings(false);
         println!("cargo:rustc-link-lib=user32");
@@ -158,25 +267,28 @@ fn main() {
     let libusb_cmake_dir = root_dir.join("lib").join("libusb-cmake");
     let libusb_include = libusb_cmake_dir.join("libusb").join("libusb");
 
-    // Build libusb from source using CMake
-    let build_dir = build_libusb_cmake(&libusb_cmake_dir);
+    let cross_compiling = is_cross_compiling();
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    // Find and copy shared library to output directory
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    if target_os == "windows" {
-        if let Some(dll_path) = find_built_dll(&build_dir) {
-            copy_dll_to_output(&dll_path);
-        }
-    } else if target_os == "macos" {
-        if let Some(dylib_path) = find_built_dylib(&build_dir) {
-            copy_dll_to_output(&dylib_path);
-        }
-    } else if target_os == "linux" {
-        if let Some(so_path) = find_built_so(&build_dir) {
-            copy_dll_to_output(&so_path);
+    if cross_compiling {
+        build_libusb_static(&libusb_cmake_dir, &include_dir);
+    } else {
+        let build_dir = build_libusb_cmake(&libusb_cmake_dir);
+
+        if target_os == "windows" {
+            if let Some(dll_path) = find_built_dll(&build_dir) {
+                copy_dll_to_output(&dll_path);
+            }
+        } else if target_os == "macos" {
+            if let Some(dylib_path) = find_built_dylib(&build_dir) {
+                copy_dll_to_output(&dylib_path);
+            }
+        } else if target_os == "linux" {
+            if let Some(so_path) = find_built_so(&build_dir) {
+                copy_dll_to_output(&so_path);
+            }
         }
     }
 
-    // Build libefex
     build_libefex(&include_dir, &src_dir, &libusb_include);
 }

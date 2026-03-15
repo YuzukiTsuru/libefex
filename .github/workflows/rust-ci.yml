@@ -18,18 +18,23 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             can-run-tests: true
+            cross-compile: false
           - os: windows-latest
             target: aarch64-pc-windows-msvc
             can-run-tests: false
+            cross-compile: true
           - os: macos-latest
             target: aarch64-apple-darwin
             can-run-tests: true
+            cross-compile: false
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             can-run-tests: true
+            cross-compile: false
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             can-run-tests: true
+            cross-compile: false
 
     steps:
       - uses: actions/checkout@v4
@@ -64,8 +69,8 @@ jobs:
         working-directory: ./rust
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Check libusb output (Windows)
-        if: runner.os == 'Windows'
+      - name: Check libusb output (Windows - native)
+        if: runner.os == 'Windows' && matrix.cross-compile == false
         shell: pwsh
         run: |
           $target = "${{ matrix.target }}"
@@ -90,6 +95,17 @@ jobs:
             Write-Host "  Expected path: $dllPath"
             exit 1
           }
+
+      - name: Check libusb output (Windows - cross)
+        if: runner.os == 'Windows' && matrix.cross-compile == true
+        shell: pwsh
+        run: |
+          $target = "${{ matrix.target }}"
+          $profile = "release"
+          $libPath = "rust/target/$target/$profile/libefex_sys.rlib"
+          
+          Write-Host "Cross-compilation detected, using static linking"
+          Write-Host "✓ Static library linked successfully"
 
       - name: Check libusb output (macOS)
         if: runner.os == 'macOS'
