@@ -113,7 +113,7 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 			.magic = SUNXI_USB_REQ_MAGIC,
 	};
 
-	if (request_len > 0 && request_len <= sizeof(fes_xfer.buf)) {
+	if (request_len > 0 && (size_t)request_len <= sizeof(fes_xfer.buf)) {
 		memcpy(fes_xfer.buf, request_buf, request_len);
 	}
 
@@ -178,5 +178,9 @@ void sunxi_usb_hex_dump(const void *buf, size_t len, const char *type) {
 		}
 		fputc('\n', stdout);
 	}
+#else
+	(void)buf;
+	(void)len;
+	(void)type;
 #endif /* DEBUG_USB_TRANSFER */
 }
