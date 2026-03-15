@@ -57,13 +57,24 @@ Rust bindings are available in the `rust/` directory.
 
 ### Build System
 
-libefex-sys uses **CMake** to build libusb as a shared library (LGPL compatible).
+libefex-sys automatically detects the build environment and chooses the appropriate linking strategy:
 
-| Target | Build Tool | Library Type |
-|--------|------------|--------------|
-| Windows | CMake | Shared (.dll) |
-| macOS | CMake | Shared (.dylib) |
-| Linux | CMake | Shared (.so) |
+| Platform | Build Type | Build Tool | Library Type |
+|----------|------------|------------|--------------|
+| Windows | Native / Cross | CMake | Shared (.dll) |
+| macOS | Native | CMake | Shared (.dylib) |
+| Linux | Native | CMake | Shared (.so) |
+| Linux | Cross | cc | Static |
+
+### Supported Targets
+
+| Platform | Target | Build Type |
+|----------|--------|------------|
+| Windows x86_64 | `x86_64-pc-windows-msvc` | Native |
+| Windows ARM64 | `aarch64-pc-windows-msvc` | Cross (Shared) |
+| macOS ARM64 | `aarch64-apple-darwin` | Native |
+| Linux x86_64 | `x86_64-unknown-linux-gnu` | Native |
+| Linux ARM64 | `aarch64-unknown-linux-gnu` | Native / Cross |
 
 ### Usage
 
@@ -75,22 +86,69 @@ libefex-sys = { path = "path/to/libefex/rust/libefex-sys" }
 
 ### Build
 
+#### Native Build
+
 ```bash
 cd rust
-
-# Build (uses CMake to compile libusb as shared library)
 cargo build --release
 ```
 
-### Requirements
-
-- **CMake 3.16+** is required
+Requirements:
+- **CMake 3.16+**
 - **Linux**: `libudev-dev` package (optional, for USB hotplug support)
+
+#### Cross-compilation
+
+Linux 交叉编译时使用静态链接，无需配置 CMake 交叉编译工具链。
+
+```bash
+# 安装交叉编译工具链
+sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+# 设置环境变量
+export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+
+# 编译
+cd rust
+cargo build --release --target aarch64-unknown-linux-gnu
+```
+
+Windows 交叉编译（如 x86_64 交叉编译 aarch64）使用 CMake 动态链接，无需额外配置：
+
+```bash
+cargo build --release --target aarch64-pc-windows-msvc
+```
+
+### How It Works
+
+The build system automatically detects cross-compilation by comparing `HOST` and `TARGET`:
+
+1. **Windows**: Always uses CMake to build libusb as a shared library (.dll), regardless of native or cross-compilation.
+
+2. **macOS**: Uses CMake to build libusb as a shared library (.dylib).
+
+3. **Linux Native**: Uses CMake to build libusb as a shared library (.so).
+
+4. **Linux Cross-compilation**: Uses `cc` crate to compile libusb from source as a static library, avoiding the need for cross-compiled CMake toolchain setup.
 
 ### License Compliance
 
-- libusb is built as a **shared library** (LGPL compliant)
-- The shared library can be replaced by users
+- **Windows / macOS / Linux Native**: libusb is built as a **shared library** (LGPL compliant), users can replace the library.
+- **Linux Cross-compilation**: libusb is statically linked (still LGPL compliant if you provide object files or source code).
+
+## CI Matrix
+
+| OS | Target | Type | Library | Tests |
+|----|--------|------|---------|-------|
+| windows-latest | x86_64-pc-windows-msvc | Native | Shared | ✓ |
+| windows-latest | aarch64-pc-windows-msvc | Cross | Shared | ✗ |
+| macos-latest | aarch64-apple-darwin | Native | Shared | ✓ |
+| ubuntu-latest | x86_64-unknown-linux-gnu | Native | Shared | ✓ |
+| ubuntu-latest | aarch64-unknown-linux-gnu | Cross | Static | ✗ |
+| ubuntu-24.04-arm | aarch64-unknown-linux-gnu | Native | Shared | ✓ |
 
 ## License
 

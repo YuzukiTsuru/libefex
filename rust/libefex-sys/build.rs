@@ -270,7 +270,7 @@ fn main() {
     let cross_compiling = is_cross_compiling();
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    if cross_compiling {
+    if cross_compiling && target_os != "windows" {
         build_libusb_static(&libusb_cmake_dir, &include_dir);
     } else {
         let build_dir = build_libusb_cmake(&libusb_cmake_dir);
