@@ -21,10 +21,7 @@ fn build_libusb_static(libusb_cmake_dir: &PathBuf) {
 
     let out_include = PathBuf::from(env::var("OUT_DIR").unwrap()).join("include");
     fs::create_dir_all(&out_include).unwrap();
-    fs::copy(
-        libusb_source.join("libusb.h"),
-        out_include.join("libusb.h"),
-    ).ok();
+    fs::copy(libusb_source.join("libusb.h"), out_include.join("libusb.h")).ok();
 
     let config_h_path = out_include.join("config.h");
     fs::File::create(&config_h_path).unwrap();
@@ -42,7 +39,10 @@ fn build_libusb_static(libusb_cmake_dir: &PathBuf) {
     let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
 
     if target_env == "msvc" {
-        let msvc_config_h = libusb_cmake_dir.join("libusb").join("msvc").join("config.h");
+        let msvc_config_h = libusb_cmake_dir
+            .join("libusb")
+            .join("msvc")
+            .join("config.h");
         if msvc_config_h.exists() {
             fs::copy(&msvc_config_h, &config_h_path).unwrap();
         }
@@ -190,7 +190,10 @@ fn find_built_dll(build_dir: &PathBuf) -> Option<PathBuf> {
 fn find_built_dylib(build_dir: &PathBuf) -> Option<PathBuf> {
     let search_paths = vec![
         build_dir.join("lib").join("libusb-1.0.dylib"),
-        build_dir.join("lib").join("Release").join("libusb-1.0.dylib"),
+        build_dir
+            .join("lib")
+            .join("Release")
+            .join("libusb-1.0.dylib"),
         build_dir.join("lib").join("Debug").join("libusb-1.0.dylib"),
     ];
 
