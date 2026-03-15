@@ -23,7 +23,7 @@ static int libusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) 
 	int bytes;
 
 	while (len > 0) {
-		const size_t chunk = len < max_chunk ? len : max_chunk;
+		const size_t chunk = (size_t)len < max_chunk ? (size_t)len : max_chunk;
 
 		sunxi_usb_hex_dump(buf, chunk, "SEND");
 
@@ -66,7 +66,6 @@ static int libusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 
 	libusb_device **list = NULL;
 	libusb_context *context = NULL;
-	int device_found = 0;
 
 	libusb_init(&context);
 	ctx->usb_context = context;
