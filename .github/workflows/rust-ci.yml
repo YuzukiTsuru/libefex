@@ -54,7 +54,7 @@ jobs:
 
       - name: Install dependencies on Ubuntu
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev cmake
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev cmake
 
       - name: Install CMake on Windows
         if: runner.os == 'Windows'
@@ -115,33 +115,6 @@ jobs:
           else
             echo "✗ ERROR: libusb-1.0.dylib not found!"
             echo "  Expected path: $dylibPath"
-            exit 1
-          fi
-
-      - name: Check libusb output (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          target="${{ matrix.target }}"
-          profile="release"
-          soPath="rust/target/$target/$profile/libusb-1.0.so"
-          minSize=50000
-          
-          if [ -f "$soPath" ]; then
-            size=$(stat -c%s "$soPath")
-            echo "✓ libusb-1.0.so found at: $soPath"
-            echo "  Size: $size bytes"
-            ls -la "$soPath"
-            file "$soPath"
-            
-            if [ "$size" -lt "$minSize" ]; then
-              echo "✗ ERROR: .so size ($size bytes) is too small (minimum: $minSize bytes)"
-              echo "  The shared library may be corrupted or incomplete"
-              exit 1
-            fi
-            echo "✓ .so size check passed ($size >= $minSize bytes)"
-          else
-            echo "✗ ERROR: libusb-1.0.so not found!"
-            echo "  Expected path: $soPath"
             exit 1
           fi
 

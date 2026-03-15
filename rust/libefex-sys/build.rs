@@ -12,6 +12,27 @@ fn is_cross_compiling() -> bool {
     host != target
 }
 
+fn find_system_libusb() -> bool {
+    if is_cross_compiling() {
+        return false;
+    }
+
+    match pkg_config::probe_library("libusb-1.0") {
+        Ok(lib) => {
+            println!("cargo:rustc-link-lib=dylib=usb-1.0");
+            for path in lib.include_paths {
+                println!("cargo:include={}", path.to_str().unwrap());
+            }
+            println!("cargo:version_number={}", lib.version);
+            true
+        }
+        Err(e) => {
+            println!("cargo:warning=Could not find system libusb: {:?}", e);
+            false
+        }
+    }
+}
+
 fn build_libusb_static(libusb_cmake_dir: &PathBuf) {
     let libusb_source = libusb_cmake_dir.join("libusb").join("libusb");
 
@@ -67,13 +88,6 @@ fn build_libusb_static(libusb_cmake_dir: &PathBuf) {
         base_config.define("HAVE_EVENTFD", Some("1"));
         base_config.file(libusb_source.join("os/linux_netlink.c"));
         base_config.file(libusb_source.join("os/linux_usbfs.c"));
-
-        if target_os != "android" {
-            base_config.define("USE_UDEV", Some("1"));
-            base_config.define("HAVE_LIBUDEV", Some("1"));
-            base_config.file(libusb_source.join("os/linux_udev.c"));
-            println!("cargo:rustc-link-lib=dylib=udev");
-        }
     }
 
     if target_family == "unix" {
@@ -273,7 +287,9 @@ fn main() {
     let cross_compiling = is_cross_compiling();
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    if cross_compiling && target_os != "windows" {
+    if find_system_libusb() {
+        println!("cargo:warning=Using system libusb-1.0");
+    } else if cross_compiling && target_os != "windows" {
         build_libusb_static(&libusb_cmake_dir);
     } else {
         let build_dir = build_libusb_cmake(&libusb_cmake_dir);

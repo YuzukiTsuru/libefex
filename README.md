@@ -19,7 +19,7 @@ libefex is a cross-platform library for interacting with Sunxi chips in both FEL
 
 - CMake 3.16 or higher
 - C compiler (GCC, Clang, MSVC, etc.)
-- Linux: `libudev-dev` package (optional, for USB hotplug support)
+- Linux: `libusb-1.0-0-dev` package
 
 ### Build Steps
 
@@ -57,13 +57,16 @@ Rust bindings are available in the `rust/` directory.
 
 ### Build System
 
-libefex-sys uses CMake to build libusb as a shared library:
+libefex-sys uses the following strategy to find or build libusb:
 
-| Platform | Build Tool | Library Type |
-|----------|------------|--------------|
+1. **System libusb**: First tries to find libusb via pkg-config (Linux/macOS)
+2. **Build from source**: If not found, builds libusb from source using CMake
+
+| Platform | Library Source | Library Type |
+|----------|----------------|--------------|
+| Linux | System (pkg-config) or CMake | Shared (.so) |
+| macOS | System (pkg-config) or CMake | Shared (.dylib) |
 | Windows | CMake | Shared (.dll) |
-| macOS | CMake | Shared (.dylib) |
-| Linux | CMake | Shared (.so) |
 
 ### Supported Targets
 
@@ -92,11 +95,12 @@ cargo build --release
 
 Requirements:
 - **CMake 3.16+**
-- **Linux**: `libudev-dev` package (optional, for USB hotplug support)
+- **Linux**: `libusb-1.0-0-dev` package (recommended)
+- **macOS**: `libusb` via Homebrew (optional)
 
 ### License Compliance
 
-libusb is built as a **shared library** (LGPL compliant), users can replace the library.
+libusb is linked as a **shared library** (LGPL compliant), users can replace the library.
 
 ## CI Matrix
 
