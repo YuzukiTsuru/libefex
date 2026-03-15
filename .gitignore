@@ -670,3 +670,4 @@ FodyWeavers.xsd
 
 build-msvc/
 rusb-master/
+rusb/
