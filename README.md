@@ -11,7 +11,7 @@ libefex is a cross-platform library for interacting with Sunxi chips in both FEL
 - Support for multiple processor architectures (ARM32, AARCH64, RISC-V32 E907)
 - C language API interface
 - Python bindings - WIP
-- Rust bindings - WIP
+- Rust bindings
 
 ## Build Guide
 
@@ -50,6 +50,47 @@ To build with static libusb:
 ```bash
 cmake -DLIBEFEX_USE_SHARED_LIBUSB=OFF ..
 ```
+
+## Rust Bindings
+
+Rust bindings are available in the `rust/` directory.
+
+### Build System
+
+libefex-sys uses **CMake** to build libusb as a shared library (LGPL compatible).
+
+| Target | Build Tool | Library Type |
+|--------|------------|--------------|
+| Windows | CMake | Shared (.dll) |
+| macOS | CMake | Shared (.dylib) |
+| Linux | CMake | Shared (.so) |
+
+### Usage
+
+```toml
+# In your Cargo.toml
+[dependencies]
+libefex-sys = { path = "path/to/libefex/rust/libefex-sys" }
+```
+
+### Build
+
+```bash
+cd rust
+
+# Build (uses CMake to compile libusb as shared library)
+cargo build --release
+```
+
+### Requirements
+
+- **CMake 3.16+** is required
+- **Linux**: `libudev-dev` package (optional, for USB hotplug support)
+
+### License Compliance
+
+- libusb is built as a **shared library** (LGPL compliant)
+- The shared library can be replaced by users
 
 ## License
 

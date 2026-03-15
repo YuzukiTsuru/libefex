@@ -15,26 +15,26 @@ jobs:
 
       matrix:
         include:
-          # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          # Windows ARM64
+            can-run-tests: true
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-          # macOS ARM64
+            can-run-tests: false
           - os: macos-latest
             target: aarch64-apple-darwin
-          # Linux x64
+            can-run-tests: true
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          # Linux ARM64
+            can-run-tests: true
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
+            can-run-tests: true
 
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          submodules: "recursive"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -53,13 +53,107 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
       - name: Install dependencies on Ubuntu
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev cmake
+
+      - name: Install CMake on Windows
+        if: runner.os == 'Windows'
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
 
       - name: Build
         working-directory: ./rust
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Check libusb output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $target = "${{ matrix.target }}"
+          $profile = "release"
+          $dllPath = "rust/target/$target/$profile/libusb-1.0.dll"
+          $minSize = 50000
+          
+          if (Test-Path $dllPath) {
+            $fileInfo = Get-Item $dllPath
+            $size = $fileInfo.Length
+            Write-Host "✓ libusb-1.0.dll found at: $dllPath"
+            Write-Host "  Size: $size bytes"
+            
+            if ($size -lt $minSize) {
+              Write-Host "✗ ERROR: DLL size ($size bytes) is too small (minimum: $minSize bytes)"
+              Write-Host "  The DLL may be corrupted or incomplete"
+              exit 1
+            }
+            Write-Host "✓ DLL size check passed ($size >= $minSize bytes)"
+          } else {
+            Write-Host "✗ ERROR: libusb-1.0.dll not found!"
+            Write-Host "  Expected path: $dllPath"
+            exit 1
+          }
+
+      - name: Check libusb output (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          target="${{ matrix.target }}"
+          profile="release"
+          dylibPath="rust/target/$target/$profile/libusb-1.0.dylib"
+          minSize=50000
+          
+          if [ -f "$dylibPath" ]; then
+            size=$(stat -f%z "$dylibPath")
+            echo "✓ libusb-1.0.dylib found at: $dylibPath"
+            echo "  Size: $size bytes"
+            ls -la "$dylibPath"
+            file "$dylibPath"
+            
+            if [ "$size" -lt "$minSize" ]; then
+              echo "✗ ERROR: dylib size ($size bytes) is too small (minimum: $minSize bytes)"
+              echo "  The dylib may be corrupted or incomplete"
+              exit 1
+            fi
+            echo "✓ dylib size check passed ($size >= $minSize bytes)"
+          else
+            echo "✗ ERROR: libusb-1.0.dylib not found!"
+            echo "  Expected path: $dylibPath"
+            exit 1
+          fi
+
+      - name: Check libusb output (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          target="${{ matrix.target }}"
+          profile="release"
+          soPath="rust/target/$target/$profile/libusb-1.0.so"
+          minSize=50000
+          
+          if [ -f "$soPath" ]; then
+            size=$(stat -c%s "$soPath")
+            echo "✓ libusb-1.0.so found at: $soPath"
+            echo "  Size: $size bytes"
+            ls -la "$soPath"
+            file "$soPath"
+            
+            if [ "$size" -lt "$minSize" ]; then
+              echo "✗ ERROR: .so size ($size bytes) is too small (minimum: $minSize bytes)"
+              echo "  The shared library may be corrupted or incomplete"
+              exit 1
+            fi
+            echo "✓ .so size check passed ($size >= $minSize bytes)"
+          else
+            echo "✗ ERROR: libusb-1.0.so not found!"
+            echo "  Expected path: $soPath"
+            exit 1
+          fi
+
       - name: Check
         working-directory: ./rust
         run: cargo check --release --target ${{ matrix.target }}
+
+      - name: Build tests
+        working-directory: ./rust
+        run: cargo test --release --target ${{ matrix.target }} --no-run
+
+      - name: Run tests
+        if: ${{ matrix.can-run-tests }}
+        working-directory: ./rust
+        run: cargo test --release --target ${{ matrix.target }}
