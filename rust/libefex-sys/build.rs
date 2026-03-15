@@ -12,23 +12,23 @@ fn is_cross_compiling() -> bool {
     host != target
 }
 
-fn find_system_libusb() -> bool {
+fn find_system_libusb() -> Option<Vec<PathBuf>> {
     if is_cross_compiling() {
-        return false;
+        return None;
     }
 
     match pkg_config::probe_library("libusb-1.0") {
         Ok(lib) => {
             println!("cargo:rustc-link-lib=dylib=usb-1.0");
-            for path in lib.include_paths {
+            for path in &lib.include_paths {
                 println!("cargo:include={}", path.to_str().unwrap());
             }
             println!("cargo:version_number={}", lib.version);
-            true
+            Some(lib.include_paths)
         }
         Err(e) => {
             println!("cargo:warning=Could not find system libusb: {:?}", e);
-            false
+            None
         }
     }
 }
@@ -234,7 +234,12 @@ fn find_built_so(build_dir: &PathBuf) -> Option<PathBuf> {
     None
 }
 
-fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &PathBuf) {
+fn build_libefex(
+    include_dir: &PathBuf,
+    src_dir: &PathBuf,
+    libusb_include: &PathBuf,
+    system_libusb_include: Option<&Vec<PathBuf>>,
+) {
     let mut c_files = vec![
         src_dir.join("efex-common.c"),
         src_dir.join("efex-fel.c"),
@@ -254,7 +259,15 @@ fn build_libefex(include_dir: &PathBuf, src_dir: &PathBuf, libusb_include: &Path
 
     let mut builder = cc::Build::new();
     builder.include(include_dir);
-    builder.include(libusb_include);
+
+    if let Some(includes) = system_libusb_include {
+        for path in includes {
+            builder.include(path);
+        }
+    } else {
+        builder.include(libusb_include);
+    }
+
     builder.files(&c_files);
 
     if env::var("CARGO_CFG_TARGET_OS") == Ok("windows".into()) {
@@ -287,10 +300,12 @@ fn main() {
     let cross_compiling = is_cross_compiling();
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    if find_system_libusb() {
+    let system_libusb_include = if let Some(includes) = find_system_libusb() {
         println!("cargo:warning=Using system libusb-1.0");
+        Some(includes)
     } else if cross_compiling && target_os != "windows" {
         build_libusb_static(&libusb_cmake_dir);
+        None
     } else {
         let build_dir = build_libusb_cmake(&libusb_cmake_dir);
 
@@ -307,7 +322,13 @@ fn main() {
                 copy_dll_to_output(&so_path);
             }
         }
-    }
+        None
+    };
 
-    build_libefex(&include_dir, &src_dir, &libusb_include);
+    build_libefex(
+        &include_dir,
+        &src_dir,
+        &libusb_include,
+        system_libusb_include.as_ref(),
+    );
 }
