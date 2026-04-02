@@ -4,6 +4,8 @@ use std::str;
 use libefex_sys::*;
 use thiserror::Error;
 
+use libc::size_t;
+
 const EFEX_ERR_SUCCESS: i32 = 0;
 
 const EFEX_CODE_MAX_SIZE: usize = 64 * 1024;
@@ -14,6 +16,34 @@ pub struct ScannedDevice {
     pub port: u8,
     pub vid: u16,
     pub pid: u16,
+}
+
+#[derive(Debug, Clone)]
+pub struct DeviceInfo {
+    pub bus: u8,
+    pub port: u8,
+    pub vid: u16,
+    pub pid: u16,
+    pub state: DeviceState,
+    pub error_code: i32,
+}
+
+/// Device state enumeration
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum DeviceState {
+    Disconnected,
+    Connected,
+    Initialized,
+    Flashed,
+    Error,
+}
+
+/// Scan mode enumeration
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ScanMode {
+    Replace,
+    Append,
+    Update,
 }
 
 #[derive(Error, Debug)]
@@ -911,3 +941,172 @@ mod tests {
         );
     }
 }
+
+/// Multi-device context structure
+pub struct MultiContext {
+    ctx: *mut libefex_sys::sunxi_efex_multi_ctx_t,
+}
+
+unsafe impl Send for MultiContext {}
+unsafe impl Sync for MultiContext {}
+
+impl MultiContext {
+    const MAX_DEVICES: usize = 16;
+
+    /// Create a new multi-device context
+    pub fn new() -> Result<Self, EfexError> {
+        let mut ctx_ptr: *mut libefex_sys::sunxi_efex_multi_ctx_t = std::ptr::null_mut();
+        let result = unsafe {
+            libefex_sys::sunxi_efex_multi_create(Self::MAX_DEVICES as size_t, &mut ctx_ptr)
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        if ctx_ptr.is_null() {
+            return Err(EfexError::Memory);
+        }
+        Ok(MultiContext { ctx: ctx_ptr })
+    }
+
+    /// Scan and connect to all available devices
+    pub fn scan_devices(&mut self, mode: ScanMode) -> Result<usize, EfexError> {
+        let c_mode = match mode {
+            ScanMode::Replace => libefex_sys::sunxi_efex_scan_mode_t::EFEX_SCAN_MODE_REPLACE,
+            ScanMode::Append => libefex_sys::sunxi_efex_scan_mode_t::EFEX_SCAN_MODE_APPEND,
+            ScanMode::Update => libefex_sys::sunxi_efex_scan_mode_t::EFEX_SCAN_MODE_UPDATE,
+        };
+        let result = unsafe { libefex_sys::sunxi_efex_multi_scan_devices(self.ctx, c_mode) };
+        if result < 0 {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(result as usize)
+    }
+
+    /// Initialize all devices
+    pub fn init_all(&mut self, skip_errors: bool) -> Result<usize, EfexError> {
+        let result = unsafe {
+            libefex_sys::sunxi_efex_multi_init_all(self.ctx, if skip_errors { 1 } else { 0 })
+        };
+        if result < 0 {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(result as usize)
+    }
+
+    /// Exit and cleanup all devices
+    pub fn exit_all(&mut self) -> Result<(), EfexError> {
+        let result = unsafe { libefex_sys::sunxi_efex_multi_exit_all(self.ctx) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Get device count
+    pub fn count(&self) -> usize {
+        unsafe { libefex_sys::sunxi_efex_multi_get_count(self.ctx) as usize }
+    }
+
+    /// Get device at specific index
+    pub fn get_device(&self, index: usize) -> Option<Context> {
+        let device_ptr = unsafe {
+            libefex_sys::sunxi_efex_multi_get_device(
+                self.ctx as *mut libefex_sys::sunxi_efex_multi_ctx_t,
+                index,
+            )
+        };
+        if device_ptr.is_null() {
+            return None;
+        }
+        Some(Context {
+            ctx: unsafe { std::ptr::read(device_ptr) },
+            initialized: true,
+        })
+    }
+
+    /// Get device info at specific index
+    pub fn get_device_info(&self, index: usize) -> Option<DeviceInfo> {
+        let info_ptr = unsafe {
+            libefex_sys::sunxi_efex_multi_get_info(
+                self.ctx as *mut libefex_sys::sunxi_efex_multi_ctx_t,
+                index,
+            )
+        };
+        if info_ptr.is_null() {
+            return None;
+        }
+        let info = unsafe { std::ptr::read(info_ptr) };
+        Some(DeviceInfo {
+            bus: info.bus,
+            port: info.port,
+            vid: info.vid,
+            pid: info.pid,
+            state: match info.state {
+                libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_DISCONNECTED => DeviceState::Disconnected,
+                libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_CONNECTED => DeviceState::Connected,
+                libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_INITIALIZED => DeviceState::Initialized,
+                libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_FLASHED => DeviceState::Flashed,
+                libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_ERROR => DeviceState::Error,
+            },
+            error_code: info.error_code,
+        })
+    }
+
+    /// Add a device at specific bus and port
+    pub fn add_device(&mut self, bus: u8, port: u8) -> Result<usize, EfexError> {
+        let result = unsafe {
+            libefex_sys::sunxi_efex_multi_add_device(self.ctx, bus, port)
+        };
+        if result < 0 {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(result as usize)
+    }
+
+    /// Remove a device at specific index
+    pub fn remove_device(&mut self, index: usize) -> Result<(), EfexError> {
+        let result = unsafe {
+            libefex_sys::sunxi_efex_multi_remove_device(self.ctx, index)
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Refresh device connections (reconnect disconnected devices)
+    pub fn refresh_devices(&mut self) -> Result<usize, EfexError> {
+        let result = unsafe {
+            libefex_sys::sunxi_efex_multi_refresh_devices(self.ctx)
+        };
+        if result < 0 {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(result as usize)
+    }
+
+    /// Get number of devices in specific state
+    pub fn count_by_state(&self, state: DeviceState) -> usize {
+        let c_state = match state {
+            DeviceState::Disconnected => libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_DISCONNECTED,
+            DeviceState::Connected => libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_CONNECTED,
+            DeviceState::Initialized => libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_INITIALIZED,
+            DeviceState::Flashed => libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_FLASHED,
+            DeviceState::Error => libefex_sys::sunxi_efex_device_state_t::EFEX_DEVICE_STATE_ERROR,
+        };
+        unsafe {
+            libefex_sys::sunxi_efex_multi_count_by_state(self.ctx, c_state) as usize
+        }
+    }
+}
+
+impl Drop for MultiContext {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe {
+                libefex_sys::sunxi_efex_multi_destroy(&mut self.ctx as *mut _);
+            }
+        }
+    }
+}
+
