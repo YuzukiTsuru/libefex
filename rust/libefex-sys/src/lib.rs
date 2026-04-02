@@ -231,6 +231,43 @@ pub struct sunxi_efex_ctx_t {
     pub resp: sunxi_efex_device_resp_t,
 }
 
+// Device state enumeration
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum sunxi_efex_device_state_t {
+    EFEX_DEVICE_STATE_DISCONNECTED = 0,
+    EFEX_DEVICE_STATE_CONNECTED = 1,
+    EFEX_DEVICE_STATE_INITIALIZED = 2,
+    EFEX_DEVICE_STATE_FLASHED = 3,
+    EFEX_DEVICE_STATE_ERROR = 4,
+}
+
+// Scan mode enumeration
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum sunxi_efex_scan_mode_t {
+    EFEX_SCAN_MODE_REPLACE = 0,
+    EFEX_SCAN_MODE_APPEND = 1,
+    EFEX_SCAN_MODE_UPDATE = 2,
+}
+
+// Multi-device device info structure
+#[repr(C)]
+pub struct sunxi_efex_device_info_t {
+    pub bus: u8,
+    pub port: u8,
+    pub vid: u16,
+    pub pid: u16,
+    pub state: sunxi_efex_device_state_t,
+    pub error_code: c_int,
+}
+
+// Multi-device context structure (opaque)
+#[repr(C)]
+pub struct sunxi_efex_multi_ctx_t {
+    _private: [u8; 0],
+}
+
 // USB request type enumeration
 #[repr(C)]
 pub enum sunxi_efex_usb_request_t {
@@ -487,4 +524,83 @@ extern "C" {
     pub fn sunxi_efex_set_usb_backend(backend: usb_backend_type) -> c_int;
 
     pub fn sunxi_efex_get_usb_backend() -> usb_backend_type;
+
+    // Multi-device functions
+    pub fn sunxi_efex_multi_create(
+        capacity: size_t,
+        multi_ctx: *mut *mut sunxi_efex_multi_ctx_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_destroy(multi_ctx: *mut *mut sunxi_efex_multi_ctx_t) -> c_int;
+
+    pub fn sunxi_efex_multi_scan_devices(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        mode: sunxi_efex_scan_mode_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_init_all(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        skip_errors: c_int,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_exit_all(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_get_count(
+        multi_ctx: *const sunxi_efex_multi_ctx_t,
+    ) -> size_t;
+
+    pub fn sunxi_efex_multi_get_device(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        index: size_t,
+    ) -> *mut sunxi_efex_ctx_t;
+
+    pub fn sunxi_efex_multi_get_info(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        index: size_t,
+    ) -> *mut sunxi_efex_device_info_t;
+
+    pub fn sunxi_efex_multi_flash_all(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        firmware_data: *const c_char,
+        firmware_size: size_t,
+        addr: u32,
+        data_type: sunxi_fes_data_type_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_flash_all_parallel(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        firmware_data: *const c_char,
+        firmware_size: size_t,
+        addr: u32,
+        data_type: sunxi_fes_data_type_t,
+        max_threads: size_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_reboot_all(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        tool_mode: sunxi_fes_tool_mode_t,
+        next_mode: sunxi_fes_tool_mode_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_add_device(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        bus: u8,
+        port: u8,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_remove_device(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+        index: size_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_refresh_devices(
+        multi_ctx: *mut sunxi_efex_multi_ctx_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_multi_count_by_state(
+        multi_ctx: *const sunxi_efex_multi_ctx_t,
+        state: sunxi_efex_device_state_t,
+    ) -> size_t;
 }
