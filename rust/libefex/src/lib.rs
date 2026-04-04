@@ -215,6 +215,40 @@ impl Context {
         Ok(())
     }
 
+    /// Set device path directly for backends that open devices from a stable system path.
+    pub fn set_device_path(&mut self, device_path: &str) -> Result<(), EfexError> {
+        if let Some(existing) = (!self.ctx.dev_name.is_null()).then_some(self.ctx.dev_name) {
+            unsafe {
+                libc::free(existing as *mut std::ffi::c_void);
+            }
+            self.ctx.dev_name = std::ptr::null_mut();
+        }
+
+        let bytes = device_path.as_bytes();
+        let len = bytes.len() + 1;
+        let raw = unsafe { libc::malloc(len) as *mut c_char };
+        if raw.is_null() {
+            return Err(EfexError::Memory);
+        }
+
+        unsafe {
+            std::ptr::copy_nonoverlapping(bytes.as_ptr(), raw as *mut u8, bytes.len());
+            *raw.add(bytes.len()) = 0;
+        }
+
+        self.ctx.dev_name = raw;
+        Ok(())
+    }
+
+    /// Return the backend device path if the current scan method populated one.
+    pub fn device_path(&self) -> Option<&str> {
+        if self.ctx.dev_name.is_null() {
+            return None;
+        }
+
+        unsafe { CStr::from_ptr(self.ctx.dev_name) }.to_str().ok()
+    }
+
     /// Scan all USB devices
     pub fn scan_usb_devices() -> Result<Vec<ScannedDevice>, EfexError> {
         let mut devices_ptr: *mut sunxi_scanned_device_t = std::ptr::null_mut();
