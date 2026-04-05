@@ -16,6 +16,16 @@ pub struct ScannedDevice {
     pub pid: u16,
 }
 
+#[derive(Debug, Clone)]
+pub struct HotplugDevice {
+    pub vendor_id: u16,
+    pub product_id: u16,
+    pub bus_id: u32,
+    pub usb_device_id: u32,
+    pub port: Option<u8>,
+    pub device_path: Option<String>,
+}
+
 #[derive(Error, Debug)]
 pub enum EfexError {
     /// Invalid parameter
@@ -276,6 +286,42 @@ impl Context {
                 })
                 .collect();
             libc::free(devices_ptr as *mut std::ffi::c_void);
+            vec
+        };
+
+        Ok(devices)
+    }
+
+    /// Read the current backend hotplug snapshot.
+    pub fn scan_hotplug_devices() -> Result<Vec<HotplugDevice>, EfexError> {
+        let mut devices_ptr: *mut sunxi_hotplug_device_t = std::ptr::null_mut();
+        let mut count: usize = 0;
+
+        let result = unsafe { sunxi_hotplug_snapshot(&mut devices_ptr, &mut count) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+
+        if devices_ptr.is_null() || count == 0 {
+            return Ok(Vec::new());
+        }
+
+        let devices = unsafe {
+            let slice = std::slice::from_raw_parts(devices_ptr, count);
+            let vec: Vec<HotplugDevice> = slice
+                .iter()
+                .map(|d| HotplugDevice {
+                    vendor_id: d.vid,
+                    product_id: d.pid,
+                    bus_id: d.bus_id,
+                    usb_device_id: d.usb_device_id,
+                    port: (d.port != 0).then_some(d.port),
+                    device_path: (!d.device_path.is_null()).then(|| {
+                        CStr::from_ptr(d.device_path).to_string_lossy().into_owned()
+                    }),
+                })
+                .collect();
+            sunxi_hotplug_free_snapshot(devices_ptr, count);
             vec
         };
 

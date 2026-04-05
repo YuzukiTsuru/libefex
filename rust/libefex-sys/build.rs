@@ -297,6 +297,17 @@ fn main() {
     let libusb_cmake_dir = root_dir.join("lib").join("libusb-cmake");
     let libusb_include = libusb_cmake_dir.join("libusb").join("libusb");
 
+    println!("cargo:rerun-if-changed={}", include_dir.display());
+    println!("cargo:rerun-if-changed={}", src_dir.display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        root_dir.join("rust").join("libefex").join("src").display()
+    );
+    println!(
+        "cargo:rerun-if-changed={}",
+        current_dir.join("src").display()
+    );
+
     let cross_compiling = is_cross_compiling();
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 

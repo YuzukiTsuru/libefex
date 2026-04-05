@@ -41,6 +41,22 @@ struct sunxi_scanned_device_t {
 };
 
 /**
+ * @brief Hotplug snapshot device information
+ *
+ * Contains backend-native device identity data used to diff hotplug state.
+ * `device_path` may be NULL when the active backend does not expose a stable path.
+ * `port` may be 0 when the backend cannot determine a stable port number.
+ */
+struct sunxi_hotplug_device_t {
+	uint16_t vid;          /**< Vendor ID */
+	uint16_t pid;          /**< Product ID */
+	uint32_t bus_id;       /**< Backend/native USB bus identifier */
+	uint32_t usb_device_id;/**< Backend/native USB device/address identifier */
+	uint8_t port;          /**< Backend-native port number, 0 if unknown */
+	char *device_path;     /**< Stable backend device path, caller must free through snapshot free API */
+};
+
+/**
  * @brief USB backend operations structure
  *
  * Function pointers for USB backend operations. Each backend must implement
@@ -52,6 +68,7 @@ struct usb_backend_ops {
 	int (*scan_device)(struct sunxi_efex_ctx_t *ctx);                 /**< Scan for USB device */
 	int (*scan_device_at)(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port); /**< Scan for USB device at specific bus/port */
 	int (*scan_devices)(struct sunxi_scanned_device_t **devices, size_t *count); /**< Scan for all USB devices */
+	int (*hotplug_snapshot)(struct sunxi_hotplug_device_t **devices, size_t *count); /**< Read current hotplug device snapshot */
 	int (*init)(struct sunxi_efex_ctx_t *ctx);                       /**< Initialize USB context */
 	int (*exit)(struct sunxi_efex_ctx_t *ctx);                       /**< Cleanup USB context */
 };
@@ -115,6 +132,26 @@ int sunxi_scan_usb_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t 
  * @return EFEX_ERR_SUCCESS on success, or an error code on failure
  */
 int sunxi_scan_usb_devices(struct sunxi_scanned_device_t **devices, size_t *count);
+
+/**
+ * @brief Read the current backend hotplug snapshot
+ *
+ * Returns all currently visible SUNXI USB devices for the active backend. This is intended
+ * for caller-side diffing to derive arrived/left events.
+ *
+ * @param devices Pointer to receive array of devices (caller must free with sunxi_hotplug_free_snapshot)
+ * @param count Pointer to receive number of devices found
+ * @return EFEX_ERR_SUCCESS on success, or an error code on failure
+ */
+int sunxi_hotplug_snapshot(struct sunxi_hotplug_device_t **devices, size_t *count);
+
+/**
+ * @brief Free a hotplug snapshot returned by sunxi_hotplug_snapshot
+ *
+ * @param devices Snapshot array pointer
+ * @param count Number of entries in the array
+ */
+void sunxi_hotplug_free_snapshot(struct sunxi_hotplug_device_t *devices, size_t count);
 
 /**
  * @brief Initialize USB context

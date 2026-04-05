@@ -161,6 +161,81 @@ static int libusb_scan_devices(struct sunxi_scanned_device_t **devices, size_t *
 	return EFEX_ERR_SUCCESS;
 }
 
+static int libusb_hotplug_snapshot(struct sunxi_hotplug_device_t **devices, size_t *count) {
+	if (!devices || !count) {
+		return EFEX_ERR_NULL_PTR;
+	}
+
+	*devices = NULL;
+	*count = 0;
+
+	libusb_device **list = NULL;
+	libusb_context *context = NULL;
+
+	int r = libusb_init(&context);
+	if (r < 0) {
+		return EFEX_ERR_USB_INIT;
+	}
+
+	const ssize_t device_count = libusb_get_device_list(context, &list);
+	if (device_count < 0) {
+		libusb_exit(context);
+		return EFEX_ERR_USB_DEVICE_NOT_FOUND;
+	}
+
+	size_t found_count = 0;
+	for (ssize_t i = 0; i < device_count; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		if (libusb_get_device_descriptor(device, &desc) != 0) {
+			continue;
+		}
+		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
+			found_count++;
+		}
+	}
+
+	if (found_count == 0) {
+		libusb_free_device_list(list, 1);
+		libusb_exit(context);
+		return EFEX_ERR_SUCCESS;
+	}
+
+	struct sunxi_hotplug_device_t *result = (struct sunxi_hotplug_device_t *)malloc(
+		sizeof(struct sunxi_hotplug_device_t) * found_count);
+	if (!result) {
+		libusb_free_device_list(list, 1);
+		libusb_exit(context);
+		return EFEX_ERR_MEMORY;
+	}
+	memset(result, 0, sizeof(struct sunxi_hotplug_device_t) * found_count);
+
+	size_t idx = 0;
+	for (ssize_t i = 0; i < device_count && idx < found_count; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		if (libusb_get_device_descriptor(device, &desc) != 0) {
+			continue;
+		}
+		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
+			result[idx].vid = desc.idVendor;
+			result[idx].pid = desc.idProduct;
+			result[idx].bus_id = libusb_get_bus_number(device);
+			result[idx].usb_device_id = libusb_get_device_address(device);
+			result[idx].port = libusb_get_port_number(device);
+			result[idx].device_path = NULL;
+			idx++;
+		}
+	}
+
+	libusb_free_device_list(list, 1);
+	libusb_exit(context);
+
+	*devices = result;
+	*count = found_count;
+	return EFEX_ERR_SUCCESS;
+}
+
 static int libusb_scan_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint8_t port) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
@@ -257,6 +332,7 @@ const struct usb_backend_ops usb_libusb_ops = {
 	.scan_device = libusb_scan_device,
 	.scan_device_at = libusb_scan_device_at,
 	.scan_devices = libusb_scan_devices,
+	.hotplug_snapshot = libusb_hotplug_snapshot,
 	.init = libusb_backend_init,
 	.exit = libusb_backend_exit,
 };

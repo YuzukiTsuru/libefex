@@ -299,6 +299,17 @@ pub struct sunxi_scanned_device_t {
     pub pid: u16,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sunxi_hotplug_device_t {
+    pub vid: u16,
+    pub pid: u16,
+    pub bus_id: u32,
+    pub usb_device_id: u32,
+    pub port: u8,
+    pub device_path: *mut c_char,
+}
+
 // Declare C functions
 extern "C" {
     // Common functions
@@ -319,6 +330,13 @@ extern "C" {
         devices: *mut *mut sunxi_scanned_device_t,
         count: *mut size_t,
     ) -> c_int;
+
+    pub fn sunxi_hotplug_snapshot(
+        devices: *mut *mut sunxi_hotplug_device_t,
+        count: *mut size_t,
+    ) -> c_int;
+
+    pub fn sunxi_hotplug_free_snapshot(devices: *mut sunxi_hotplug_device_t, count: size_t);
 
     pub fn sunxi_efex_get_device_mode(ctx: *const sunxi_efex_ctx_t) -> sunxi_verify_device_mode_t;
 
