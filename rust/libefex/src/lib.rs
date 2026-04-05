@@ -316,9 +316,8 @@ impl Context {
                     bus_id: d.bus_id,
                     usb_device_id: d.usb_device_id,
                     port: (d.port != 0).then_some(d.port),
-                    device_path: (!d.device_path.is_null()).then(|| {
-                        CStr::from_ptr(d.device_path).to_string_lossy().into_owned()
-                    }),
+                    device_path: (!d.device_path.is_null())
+                        .then(|| CStr::from_ptr(d.device_path).to_string_lossy().into_owned()),
                 })
                 .collect();
             sunxi_hotplug_free_snapshot(devices_ptr, count);
