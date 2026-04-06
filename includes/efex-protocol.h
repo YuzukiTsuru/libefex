@@ -28,6 +28,7 @@ enum sunxi_efex_error_t {
 	EFEX_ERR_USB_OPEN = -12,             /**< Failed to open device */
 	EFEX_ERR_USB_TRANSFER = -13,         /**< USB transfer failed */
 	EFEX_ERR_USB_TIMEOUT = -14,          /**< USB transfer timeout */
+	EFEX_ERR_USB_WRONG_DRIVER = -15,     /**< Wrong USB driver installed (e.g. need WinUSB) */
 
 	/* Protocol Errors */
 	EFEX_ERR_PROTOCOL = -20,            /**< Protocol error */

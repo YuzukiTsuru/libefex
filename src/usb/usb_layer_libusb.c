@@ -59,6 +59,16 @@ static int libusb_bulk_recv(void *handle, int ep, char *buf, ssize_t len) {
 	return EFEX_ERR_SUCCESS;
 }
 
+static int libusb_open_error_to_efex(int rc) {
+	if (rc == LIBUSB_ERROR_NOT_SUPPORTED || rc == LIBUSB_ERROR_NOT_FOUND) {
+		return EFEX_ERR_USB_WRONG_DRIVER;
+	}
+	if (rc == LIBUSB_ERROR_ACCESS) {
+		return EFEX_ERR_USB_OPEN;
+	}
+	return EFEX_ERR_USB_INIT;
+}
+
 static int libusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 	if (!ctx) {
 		return EFEX_ERR_NULL_PTR;
@@ -78,14 +88,19 @@ static int libusb_scan_device(struct sunxi_efex_ctx_t *ctx) {
 		}
 		if (desc.idVendor == SUNXI_USB_VENDOR && desc.idProduct == SUNXI_USB_PRODUCT) {
 			libusb_device_handle *libusb_hdl = NULL;
-			if (libusb_open(device, &libusb_hdl) != 0) {
-				fprintf(stderr, "ERROR: Can't connect to device\r\n");
-				return EFEX_ERR_USB_INIT;
+			int rc = libusb_open(device, &libusb_hdl);
+			if (rc != 0) {
+				fprintf(stderr, "ERROR: Can't connect to device: %s (rc=%d)\r\n",
+					libusb_strerror(rc), rc);
+				libusb_free_device_list(list, 1);
+				return libusb_open_error_to_efex(rc);
 			}
 			ctx->hdl = libusb_hdl;
+			libusb_free_device_list(list, 1);
 			return EFEX_ERR_SUCCESS;
 		}
 	}
+	libusb_free_device_list(list, 1);
 	return EFEX_ERR_USB_DEVICE_NOT_FOUND;
 }
 
@@ -223,7 +238,13 @@ static int libusb_hotplug_snapshot(struct sunxi_hotplug_device_t **devices, size
 			result[idx].bus_id = libusb_get_bus_number(device);
 			result[idx].usb_device_id = libusb_get_device_address(device);
 			result[idx].port = libusb_get_port_number(device);
-			result[idx].device_path = NULL;
+			/* Synthesize a stable device_path from bus:port for libusb backend */
+			{
+				char buf[32];
+				snprintf(buf, sizeof(buf), "libusb:%u:%u",
+					(unsigned)result[idx].bus_id, (unsigned)result[idx].port);
+				result[idx].device_path = strdup(buf);
+			}
 			idx++;
 		}
 	}
@@ -258,10 +279,12 @@ static int libusb_scan_device_at(struct sunxi_efex_ctx_t *ctx, uint8_t bus, uint
 			uint8_t dev_port = libusb_get_port_number(device);
 			if (dev_bus == bus && dev_port == port) {
 				libusb_device_handle *libusb_hdl = NULL;
-				if (libusb_open(device, &libusb_hdl) != 0) {
-					fprintf(stderr, "ERROR: Can't connect to device at bus=%d port=%d\r\n", bus, port);
+				int rc = libusb_open(device, &libusb_hdl);
+				if (rc != 0) {
+					fprintf(stderr, "ERROR: Can't connect to device at bus=%d port=%d: %s (rc=%d)\r\n",
+						bus, port, libusb_strerror(rc), rc);
 					libusb_free_device_list(list, 1);
-					return EFEX_ERR_USB_INIT;
+					return libusb_open_error_to_efex(rc);
 				}
 				ctx->hdl = libusb_hdl;
 				libusb_free_device_list(list, 1);
