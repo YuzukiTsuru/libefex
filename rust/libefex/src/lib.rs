@@ -130,7 +130,7 @@ fn c_error_to_rust(error_code: i32) -> EfexError {
         -12 => EfexError::UsbOpen,           // EFEX_ERR_USB_OPEN
         -13 => EfexError::UsbTransfer,       // EFEX_ERR_USB_TRANSFER
         -14 => EfexError::UsbTimeout,        // EFEX_ERR_USB_TIMEOUT
-        -15 => EfexError::UsbWrongDriver,     // EFEX_ERR_USB_WRONG_DRIVER
+        -15 => EfexError::UsbWrongDriver,    // EFEX_ERR_USB_WRONG_DRIVER
         -20 => EfexError::Protocol,          // EFEX_ERR_PROTOCOL
         -21 => EfexError::InvalidResponse,   // EFEX_ERR_INVALID_RESPONSE
         -22 => EfexError::UnexpectedStatus,  // EFEX_ERR_UNEXPECTED_STATUS
