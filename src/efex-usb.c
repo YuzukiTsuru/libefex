@@ -18,7 +18,7 @@ int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_
 	}
 
 	struct sunxi_usb_request_t req = {
-			.magic = SUNXI_USB_REQ_MAGIC,
+			.magics = SUNXI_USB_REQ_MAGIC_INT,
 			.tab = 0x0,
 			.data_length = cpu_to_le32(length),
 			.cmd_length = SUNXI_EFEX_CMD_LEN,
@@ -110,7 +110,7 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 	struct sunxi_fes_xfer_t fes_xfer = {
 			.cmd = cpu_to_le16((uint16_t) cmd),
 			.tag = 0x0,
-			.magic = SUNXI_USB_REQ_MAGIC,
+			.magics = SUNXI_USB_REQ_MAGIC_INT,
 	};
 
 	if (request_len > 0 && (size_t)request_len <= sizeof(fes_xfer.buf)) {

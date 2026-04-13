@@ -21,6 +21,7 @@ enum sunxi_usb_ids {
 
 #define SUNXI_EFEX_CMD_LEN (0xc)
 #define SUNXI_USB_REQ_MAGIC "AWUC"
+#define SUNXI_USB_REQ_MAGIC_INT 0x43554141  /* "AWUC" in little-endian */
 #define SUNXI_USB_RSP_MAGIC "AWUS"
 #define SUNXI_VERIFY_RSP_MAGIC "AWUSBEFEX"
 
