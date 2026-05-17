@@ -83,7 +83,8 @@ pub enum sunxi_efex_cmd_t {
     EFEX_CMD_FES_FORCE_ERASE_KEY = 0x0221,
     EFEX_CMD_FES_QUERY_SECURE = 0x0230,
     EFEX_CMD_FES_QUERY_INFO = 0x0231,
-    EFEX_CMD_FES_GET_CHIPID = 0x0232,
+    EFEX_CMD_FES_QUERY_STORAGE_LIST = 0x0232,
+    EFEX_CMD_FES_FLASH_SWITCH = 0x0233,
 }
 
 // Device mode enumeration
@@ -426,6 +427,11 @@ extern "C" {
         storage_type: *mut u32,
     ) -> c_int;
 
+    pub fn sunxi_efex_fes_query_storage_list(
+        ctx: *const sunxi_efex_ctx_t,
+        storage_mask: *mut u32,
+    ) -> c_int;
+
     pub fn sunxi_efex_fes_query_secure(
         ctx: *const sunxi_efex_ctx_t,
         secure_type: *mut u32,
@@ -442,8 +448,7 @@ extern "C" {
         on_off: u32,
     ) -> c_int;
 
-    pub fn sunxi_efex_fes_get_chipid(ctx: *const sunxi_efex_ctx_t, chip_id: *const c_char)
-        -> c_int;
+    pub fn sunxi_efex_fes_flash_switch(ctx: *const sunxi_efex_ctx_t, flash_type: u32) -> c_int;
 
     pub fn sunxi_efex_fes_down(
         ctx: *const sunxi_efex_ctx_t,

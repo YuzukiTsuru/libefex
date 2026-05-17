@@ -441,15 +441,4 @@ int main(const int argc, char *argv[]) {
 	}
 	printf("Upload Data: %s\n", up_buf);
 
-	// maybe not supported
-#if 0
-	const uint8_t chip_id[129] = {0};
-	ret = sunxi_efex_fes_get_chipid(&ctx, chip_id);
-	if (ret != EFEX_ERR_SUCCESS) {
-		fprintf(stderr, "ERROR: %s\r\n", sunxi_efex_strerror(ret));
-		sunxi_usb_exit(&ctx);
-		return ret;
-	}
-	printf("Chip ID: %s\n", chip_id);
-#endif
 }

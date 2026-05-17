@@ -443,6 +443,16 @@ impl Context {
         Ok(storage_type)
     }
 
+    /// Query available storage device types as a bitmask.
+    pub fn fes_query_storage_list(&self) -> Result<u32, EfexError> {
+        let mut storage_mask: u32 = 0;
+        let result = unsafe { sunxi_efex_fes_query_storage_list(self.as_ptr(), &mut storage_mask) };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(storage_mask)
+    }
+
     /// Query secure mode type
     pub fn fes_query_secure(&self) -> Result<u32, EfexError> {
         let mut secure_type: u32 = 0;
@@ -474,17 +484,13 @@ impl Context {
         Ok(())
     }
 
-    /// Get chip ID
-    pub fn fes_get_chipid(&self) -> Result<String, EfexError> {
-        let mut chip_id: Vec<u8> = vec![0; 64];
-        let result = unsafe {
-            sunxi_efex_fes_get_chipid(self.as_ptr(), chip_id.as_mut_ptr() as *mut c_char)
-        };
+    /// Switch active flash storage type.
+    pub fn fes_flash_switch(&self, flash_type: u32) -> Result<(), EfexError> {
+        let result = unsafe { sunxi_efex_fes_flash_switch(self.as_ptr(), flash_type) };
         if result != EFEX_ERR_SUCCESS {
             return Err(c_error_to_rust(result));
         }
-        let c_str = unsafe { CStr::from_ptr(chip_id.as_ptr() as *const c_char) };
-        Ok(c_str.to_str().unwrap_or("").to_string())
+        Ok(())
     }
 
     /// Download data to device

@@ -15,6 +15,20 @@ int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *s
 	                          sizeof(uint32_t));
 }
 
+int sunxi_efex_fes_query_storage_list(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_mask) {
+	if (!storage_mask) {
+		return EFEX_ERR_NULL_PTR;
+	}
+
+	uint8_t mask = 0;
+	const int ret = sunxi_usb_fes_xfer(ctx, FES_XFER_RECV, EFEX_CMD_FES_QUERY_STORAGE_LIST, NULL, 0, (char *) &mask,
+	                                   sizeof(mask));
+	if (ret == EFEX_ERR_SUCCESS) {
+		*storage_mask = mask;
+	}
+	return ret;
+}
+
 int sunxi_efex_fes_query_secure(const struct sunxi_efex_ctx_t *ctx, uint32_t *secure_type) {
 	return sunxi_usb_fes_xfer(ctx, FES_XFER_RECV, EFEX_CMD_FES_QUERY_SECURE, NULL, 0, (char *) secure_type,
 	                          sizeof(uint32_t));
@@ -34,8 +48,12 @@ int sunxi_efex_fes_flash_set_onoff(const struct sunxi_efex_ctx_t *ctx, const uin
 	return sunxi_usb_fes_xfer(ctx, FES_XFER_NONE, cmd, (const char *) &fes_flash, sizeof(fes_flash), NULL, 0);
 }
 
-int sunxi_efex_fes_get_chipid(const struct sunxi_efex_ctx_t *ctx, const char *chip_id) {
-	return sunxi_usb_fes_xfer(ctx, FES_XFER_RECV, EFEX_CMD_FES_GET_CHIPID, NULL, 0, chip_id, 129);
+int sunxi_efex_fes_flash_switch(const struct sunxi_efex_ctx_t *ctx, const uint32_t flash_type) {
+	const struct sunxi_fes_flash_t fes_flash = {
+			.flash_type = cpu_to_le32(flash_type),
+	};
+	return sunxi_usb_fes_xfer(ctx, FES_XFER_NONE, EFEX_CMD_FES_FLASH_SWITCH, (const char *) &fes_flash,
+	                          sizeof(fes_flash), NULL, 0);
 }
 
 static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len,

@@ -47,6 +47,18 @@ enum sunxi_fes_data_type_t {
 int sunxi_efex_fes_query_storage(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_type);
 
 /**
+ * @brief Query available storage device types
+ *
+ * The returned value is a bitmask reported by FES:
+ * bit0=NAND, bit1=eMMC, bit2=SPI NOR, bit3=UFS.
+ *
+ * @param ctx Context pointer
+ * @param storage_mask Output parameter, available storage bitmask
+ * @return 0 on success, negative value on failure
+ */
+int sunxi_efex_fes_query_storage_list(const struct sunxi_efex_ctx_t *ctx, uint32_t *storage_mask);
+
+/**
  * @brief Query secure mode type
  *
  * @param ctx Context pointer
@@ -75,13 +87,13 @@ int sunxi_efex_fes_probe_flash_size(const struct sunxi_efex_ctx_t *ctx, uint32_t
 int sunxi_efex_fes_flash_set_onoff(const struct sunxi_efex_ctx_t *ctx, const uint32_t *storage_type, uint32_t on_off);
 
 /**
- * @brief Get chip ID
+ * @brief Switch active flash storage type
  *
  * @param ctx Context pointer
- * @param chip_id Output parameter, chip ID string buffer
+ * @param flash_type Storage device type to switch to
  * @return 0 on success, negative value on failure
  */
-int sunxi_efex_fes_get_chipid(const struct sunxi_efex_ctx_t *ctx, const char *chip_id);
+int sunxi_efex_fes_flash_switch(const struct sunxi_efex_ctx_t *ctx, uint32_t flash_type);
 
 /**
  * @brief Send data to FES (download)
