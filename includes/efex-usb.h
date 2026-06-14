@@ -12,7 +12,7 @@ extern "C" {
 #include "efex-protocol.h"
 
 #define DEBUG_USB_TRANSFER 0
-#define DEFAULT_USB_TIMEOUT (10000)
+#define DEFAULT_USB_TIMEOUT (60000)
 
 enum sunxi_usb_ids {
 	SUNXI_USB_VENDOR = 0x1f3a,

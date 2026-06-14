@@ -29,6 +29,9 @@ static int libusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) 
 
 		const int r = libusb_bulk_transfer(hdl, ep, (void *) buf, (int) chunk, &bytes, DEFAULT_USB_TIMEOUT);
 		if (r != 0) {
+			if (r == LIBUSB_ERROR_TIMEOUT) {
+				return EFEX_ERR_USB_TIMEOUT;
+			}
 			return EFEX_ERR_USB_TRANSFER;
 		}
 		len -= bytes;
@@ -48,6 +51,9 @@ static int libusb_bulk_recv(void *handle, int ep, char *buf, ssize_t len) {
 	while (len > 0) {
 		const int r = libusb_bulk_transfer(hdl, ep, (uint8_t *) buf, (int) len, &bytes, DEFAULT_USB_TIMEOUT);
 		if (r != 0) {
+			if (r == LIBUSB_ERROR_TIMEOUT) {
+				return EFEX_ERR_USB_TIMEOUT;
+			}
 			return EFEX_ERR_USB_TRANSFER;
 		}
 

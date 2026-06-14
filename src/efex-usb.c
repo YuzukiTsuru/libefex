@@ -28,7 +28,7 @@ int sunxi_send_usb_request(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_
 
 	const int ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, (const char *) &req, sizeof(struct sunxi_usb_request_t));
 	if (ret != 0) {
-		return EFEX_ERR_USB_TRANSFER;
+		return ret;
 	}
 	return EFEX_ERR_SUCCESS;
 }
@@ -42,7 +42,7 @@ int sunxi_read_usb_response(const struct sunxi_efex_ctx_t *ctx) {
 
 	const int ret = sunxi_usb_bulk_recv(ctx->hdl, ctx->epin, (char *) &resp, sizeof(resp));
 	if (ret != 0) {
-		return EFEX_ERR_USB_TRANSFER;
+		return ret;
 	}
 
 	if (strncmp(resp.magic, SUNXI_USB_RSP_MAGIC, 4) != 0) {
@@ -64,11 +64,14 @@ int sunxi_usb_write(const struct sunxi_efex_ctx_t *ctx, const void *buf, const s
 
 	ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, buf, len);
 	if (ret != 0) {
-		return EFEX_ERR_USB_TRANSFER;
+		return ret;
 	}
 
 	ret = sunxi_read_usb_response(ctx);
 	if (ret != 0) {
+		if (ret < 0) {
+			return ret;
+		}
 		return EFEX_ERR_PROTOCOL;
 	}
 	return EFEX_ERR_SUCCESS;
@@ -86,11 +89,14 @@ int sunxi_usb_read(const struct sunxi_efex_ctx_t *ctx, const void *data, const s
 
 	ret = sunxi_usb_bulk_recv(ctx->hdl, ctx->epin, (char *) data, len);
 	if (ret != 0) {
-		return EFEX_ERR_USB_TRANSFER;
+		return ret;
 	}
 
 	ret = sunxi_read_usb_response(ctx);
 	if (ret != 0) {
+		if (ret < 0) {
+			return ret;
+		}
 		return EFEX_ERR_PROTOCOL;
 	}
 	return EFEX_ERR_SUCCESS;
@@ -119,7 +125,7 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 
 	int ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, (const char *) &fes_xfer, sizeof(fes_xfer));
 	if (ret != 0) {
-		return EFEX_ERR_USB_TRANSFER;
+		return ret;
 	}
 
 	if (type == FES_XFER_SEND && len > 0) {
@@ -128,7 +134,7 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 		}
 		ret = sunxi_usb_bulk_send(ctx->hdl, ctx->epout, buf, len);
 		if (ret != 0) {
-			return EFEX_ERR_USB_TRANSFER;
+			return ret;
 		}
 	} else if (type == FES_XFER_RECV && len > 0) {
 		if (!buf) {
@@ -136,12 +142,15 @@ int sunxi_usb_fes_xfer(const struct sunxi_efex_ctx_t *ctx, const enum sunxi_usb_
 		}
 		ret = sunxi_usb_bulk_recv(ctx->hdl, ctx->epin, (char *) buf, len);
 		if (ret != 0) {
-			return EFEX_ERR_USB_TRANSFER;
+			return ret;
 		}
 	}
 
 	ret = sunxi_read_usb_response(ctx);
 	if (ret != 0) {
+		if (ret < 0) {
+			return ret;
+		}
 		return EFEX_ERR_PROTOCOL;
 	}
 
