@@ -26,6 +26,21 @@ enum sunxi_fes_data_type_t {
 	SUNXI_EFEX_FULLIMG_SIZE_TAG = 0x7f10, /**< Full image size tag */
 	SUNXI_EFEX_EXT4_UBIFS_TAG = 0x7ff0,   /**< EXT4/UBIFS file system tag */
 	SUNXI_EFEX_FLASH_TAG = 0x8000,        /**< FLASH operation tag */
+	/* Boot partition tags (physical boot0/boot1, used with the storage-specific
+	 * FES_NAND/SPINAND/NOR commands and, for eMMC, with FES_UP). */
+	SUNXI_EFEX_FLASH_BOOT0_TAG = 0x8001, /**< eMMC physical boot0 tag */
+	SUNXI_EFEX_FLASH_BOOT1_TAG = 0x8002, /**< eMMC physical boot1 tag */
+	SUNXI_EFEX_NAND_BOOT0 = 0x8010,      /**< raw/SPI NAND boot0 tag */
+	SUNXI_EFEX_NAND_BOOT1 = 0x8020,      /**< raw/SPI NAND boot1 tag */
+	SUNXI_EFEX_NOR_BOOT0 = 0x8011,       /**< SPI NOR boot0 tag */
+	SUNXI_EFEX_NOR_BOOT1 = 0x8021,       /**< SPI NOR boot1 tag */
+	/* Boot size query tags (return a 4-byte size via the storage-specific
+	 * commands, used to learn boot0/boot1 sizes on NAND/NOR where they are
+	 * not fixed). */
+	SUNXI_EFEX_NAND_BOOT0_SIZE = 0x10001, /**< raw/SPI NAND boot0 size query */
+	SUNXI_EFEX_NAND_BOOT1_SIZE = 0x10002, /**< raw/SPI NAND boot1 size query */
+	SUNXI_EFEX_NOR_BOOT0_SIZE = 0x10005,  /**< SPI NOR boot0 size query */
+	SUNXI_EFEX_NOR_BOOT1_SIZE = 0x10006,  /**< SPI NOR boot1 size query */
 	/* Data type mask */
 	SUNXI_EFEX_DATA_TYPE_MASK = 0x7fff, /**< Data type mask */
 
@@ -120,6 +135,52 @@ int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, con
  */
 int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
                       enum sunxi_fes_data_type_t type);
+
+/**
+ * @brief Receive data from raw NAND via FES (upload)
+ *
+ * Uses the dedicated FES_NAND (0x0301) command. The address advances in BYTES
+ * (raw NAND is byte-addressed), unlike the sector-addressed FES_UP path.
+ *
+ * @param ctx Context pointer
+ * @param buf Destination data buffer
+ * @param len Data length in bytes
+ * @param addr Source address (byte offset)
+ * @param type Data type tag
+ * @return 0 on success, negative value on failure
+ */
+int sunxi_efex_fes_nand_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
+                           enum sunxi_fes_data_type_t type);
+
+/**
+ * @brief Receive data from SPI NAND via FES (upload)
+ *
+ * Uses the dedicated FES_SPINAND (0x0302) command with byte addressing.
+ *
+ * @param ctx Context pointer
+ * @param buf Destination data buffer
+ * @param len Data length in bytes
+ * @param addr Source address (byte offset)
+ * @param type Data type tag
+ * @return 0 on success, negative value on failure
+ */
+int sunxi_efex_fes_spinand_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
+                              enum sunxi_fes_data_type_t type);
+
+/**
+ * @brief Receive data from SPI NOR via FES (upload)
+ *
+ * Uses the dedicated FES_NOR (0x0303) command with byte addressing.
+ *
+ * @param ctx Context pointer
+ * @param buf Destination data buffer
+ * @param len Data length in bytes
+ * @param addr Source address (byte offset)
+ * @param type Data type tag
+ * @return 0 on success, negative value on failure
+ */
+int sunxi_efex_fes_spinor_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, uint32_t addr,
+                             enum sunxi_fes_data_type_t type);
 
 /**
  * @brief Verify content at specified address and size

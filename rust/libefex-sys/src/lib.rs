@@ -85,6 +85,11 @@ pub enum sunxi_efex_cmd_t {
     EFEX_CMD_FES_QUERY_INFO = 0x0231,
     EFEX_CMD_FES_QUERY_STORAGE_LIST = 0x0232,
     EFEX_CMD_FES_FLASH_SWITCH = 0x0233,
+    // Storage-specific FES commands (raw NAND / SPI NAND / SPI NOR). These are
+    // byte-addressed, unlike the sector-addressed FES_UP (0x0207).
+    EFEX_CMD_FES_NAND = 0x0301,
+    EFEX_CMD_FES_SPINAND = 0x0302,
+    EFEX_CMD_FES_NOR = 0x0303,
 }
 
 // Device mode enumeration
@@ -261,6 +266,18 @@ pub enum sunxi_fes_data_type_t {
     SUNXI_EFEX_FULLIMG_SIZE_TAG = 0x7f10, // Full image size tag
     SUNXI_EFEX_EXT4_UBIFS_TAG = 0x7ff0,   // EXT4/UBIFS file system tag
     SUNXI_EFEX_FLASH_TAG = 0x8000,        // FLASH operation tag
+    // Boot partition tags (physical boot0/boot1)
+    SUNXI_EFEX_FLASH_BOOT0_TAG = 0x8001, // eMMC physical boot0 tag
+    SUNXI_EFEX_FLASH_BOOT1_TAG = 0x8002, // eMMC physical boot1 tag
+    SUNXI_EFEX_NAND_BOOT0 = 0x8010,      // raw/SPI NAND boot0 tag
+    SUNXI_EFEX_NAND_BOOT1 = 0x8020,      // raw/SPI NAND boot1 tag
+    SUNXI_EFEX_NOR_BOOT0 = 0x8011,       // SPI NOR boot0 tag
+    SUNXI_EFEX_NOR_BOOT1 = 0x8021,       // SPI NOR boot1 tag
+    // Boot size query tags (return a 4-byte size)
+    SUNXI_EFEX_NAND_BOOT0_SIZE = 0x10001, // raw/SPI NAND boot0 size query
+    SUNXI_EFEX_NAND_BOOT1_SIZE = 0x10002, // raw/SPI NAND boot1 size query
+    SUNXI_EFEX_NOR_BOOT0_SIZE = 0x10005,  // SPI NOR boot0 size query
+    SUNXI_EFEX_NOR_BOOT1_SIZE = 0x10006,  // SPI NOR boot1 size query
     // Data type mask
     SUNXI_EFEX_DATA_TYPE_MASK = 0x7fff, // Data type mask
 
@@ -459,6 +476,30 @@ extern "C" {
     ) -> c_int;
 
     pub fn sunxi_efex_fes_up(
+        ctx: *const sunxi_efex_ctx_t,
+        buf: *const c_char,
+        len: c_int,
+        addr: u32,
+        typ: sunxi_fes_data_type_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_fes_nand_up(
+        ctx: *const sunxi_efex_ctx_t,
+        buf: *const c_char,
+        len: c_int,
+        addr: u32,
+        typ: sunxi_fes_data_type_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_fes_spinand_up(
+        ctx: *const sunxi_efex_ctx_t,
+        buf: *const c_char,
+        len: c_int,
+        addr: u32,
+        typ: sunxi_fes_data_type_t,
+    ) -> c_int;
+
+    pub fn sunxi_efex_fes_spinor_up(
         ctx: *const sunxi_efex_ctx_t,
         buf: *const c_char,
         len: c_int,

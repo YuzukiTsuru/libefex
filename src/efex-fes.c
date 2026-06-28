@@ -72,7 +72,13 @@ static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char
 	const char *buff_ptr = (char *) buf;
 	uint32_t addr_cur = addr;
 	enum sunxi_fes_data_type_t current_type = type;
+	// Addressing mode: data-type tags (0x7xxx) are byte-addressed, while the
+	// FLASH tag (0x8000) is sector-addressed. The storage-specific commands
+	// (raw NAND / SPI NAND / SPI NOR) are always byte-addressed regardless of
+	// the tag, so the address advances by the byte count of each 64KB chunk.
 	const bool is_data_type = (type & SUNXI_EFEX_DATA_TYPE_MASK) != 0;
+	const bool byte_addressed = is_data_type || cmd == EFEX_CMD_FES_NAND || cmd == EFEX_CMD_FES_SPINAND ||
+	                            cmd == EFEX_CMD_FES_NOR;
 
 	while (remain_data > 0) {
 		// Calculate current transfer length
@@ -91,12 +97,14 @@ static int sunxi_efex_fes_up_down(const struct sunxi_efex_ctx_t *ctx, const char
 				.flags = current_type,
 		};
 
+		// Direction: FES_DOWN sends data to the device; all other commands
+		// (FES_UP, FES_NAND, FES_SPINAND, FES_NOR) receive data from it.
 		const enum sunxi_usb_fes_xfer_type_t xfer_type = (cmd == EFEX_CMD_FES_DOWN) ? FES_XFER_SEND : FES_XFER_RECV;
 		// Perform USB transfer
 		ret = sunxi_usb_fes_xfer(ctx, xfer_type, cmd, (const char *) &trans, sizeof(trans), buff_ptr, length);
 
-		// Update address based on data type
-		addr_cur += is_data_type ? length : (length / 512);
+		// Update address based on addressing mode (byte vs. sector)
+		addr_cur += byte_addressed ? length : (length / 512);
 		buff_ptr += length;
 
 		// Check for errors
@@ -116,6 +124,21 @@ int sunxi_efex_fes_down(const struct sunxi_efex_ctx_t *ctx, const char *buf, con
 int sunxi_efex_fes_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,
                       const enum sunxi_fes_data_type_t type) {
 	return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_UP);
+}
+
+int sunxi_efex_fes_nand_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len, const uint32_t addr,
+                           const enum sunxi_fes_data_type_t type) {
+	return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_NAND);
+}
+
+int sunxi_efex_fes_spinand_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len,
+                              const uint32_t addr, const enum sunxi_fes_data_type_t type) {
+	return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_SPINAND);
+}
+
+int sunxi_efex_fes_spinor_up(const struct sunxi_efex_ctx_t *ctx, const char *buf, const ssize_t len,
+                             const uint32_t addr, const enum sunxi_fes_data_type_t type) {
+	return sunxi_efex_fes_up_down(ctx, buf, len, addr, type, EFEX_CMD_FES_NOR);
 }
 
 int sunxi_efex_fes_verify_value(const struct sunxi_efex_ctx_t *ctx, const uint32_t addr, const uint64_t size,

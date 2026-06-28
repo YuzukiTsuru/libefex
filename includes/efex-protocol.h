@@ -92,7 +92,14 @@ enum sunxi_efex_cmd_t {
 	EFEX_CMD_FES_QUERY_SECURE = 0x0230,
 	EFEX_CMD_FES_QUERY_INFO = 0x0231,
 	EFEX_CMD_FES_QUERY_STORAGE_LIST = 0x0232,
-	EFEX_CMD_FES_FLASH_SWITCH = 0x0233
+	EFEX_CMD_FES_FLASH_SWITCH = 0x0233,
+	/* Storage-specific FES Commands (raw NAND / SPI NAND / SPI NOR).
+	 * These commands address the media directly and use byte addressing,
+	 * unlike the generic FES_UP (0x0207) which is sector-addressed for
+	 * eMMC/SD/UFS logical flash access. */
+	EFEX_CMD_FES_NAND = 0x0301,
+	EFEX_CMD_FES_SPINAND = 0x0302,
+	EFEX_CMD_FES_NOR = 0x0303
 };
 
 enum sunxi_verify_device_mode_t {

@@ -612,6 +612,72 @@ impl Context {
         Ok(())
     }
 
+    /// Upload (read) data from raw NAND (byte-addressed, FES_NAND command).
+    pub fn fes_nand_up(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+    ) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_nand_up(
+                self.as_ptr(),
+                buf.as_mut_ptr() as *const c_char,
+                buf.len() as c_int,
+                addr,
+                rust_fes_data_type_to_c(data_type),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Upload (read) data from SPI NAND (byte-addressed, FES_SPINAND command).
+    pub fn fes_spinand_up(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+    ) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_spinand_up(
+                self.as_ptr(),
+                buf.as_mut_ptr() as *const c_char,
+                buf.len() as c_int,
+                addr,
+                rust_fes_data_type_to_c(data_type),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
+    /// Upload (read) data from SPI NOR (byte-addressed, FES_NOR command).
+    pub fn fes_spinor_up(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+    ) -> Result<(), EfexError> {
+        let result = unsafe {
+            sunxi_efex_fes_spinor_up(
+                self.as_ptr(),
+                buf.as_mut_ptr() as *const c_char,
+                buf.len() as c_int,
+                addr,
+                rust_fes_data_type_to_c(data_type),
+            )
+        };
+        if result != EFEX_ERR_SUCCESS {
+            return Err(c_error_to_rust(result));
+        }
+        Ok(())
+    }
+
     /// Verify value
     pub fn fes_verify_value(&self, addr: u32, size: u64) -> Result<FesVerifyResp, EfexError> {
         let resp: sunxi_fes_verify_resp_t = unsafe { std::mem::zeroed() };
@@ -668,6 +734,7 @@ impl Context {
         addr: u32,
         data_type: FesDataType,
         cmd: sunxi_efex_cmd_t,
+        byte_addressed: bool,
         mut progress_callback: F,
     ) -> Result<u64, EfexError>
     where
@@ -680,8 +747,6 @@ impl Context {
         let mut transferred: u64 = 0;
 
         let base_type = rust_fes_data_type_to_c(data_type) as u32;
-        let is_data_type =
-            (base_type & sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32) != 0;
         let mut current_type = base_type;
 
         let xfer_type = if cmd == sunxi_efex_cmd_t::EFEX_CMD_FES_DOWN {
@@ -724,7 +789,11 @@ impl Context {
                 return Err(c_error_to_rust(result));
             }
 
-            addr_cur = addr_cur.wrapping_add(if is_data_type { length } else { length / 512 });
+            addr_cur = addr_cur.wrapping_add(if byte_addressed {
+                length
+            } else {
+                length / 512
+            });
             buff_ptr = unsafe { buff_ptr.add(length as usize) };
             transferred += length as u64;
 
@@ -752,6 +821,7 @@ impl Context {
             addr,
             data_type,
             sunxi_efex_cmd_t::EFEX_CMD_FES_DOWN,
+            data_type_is_byte_addressed(data_type),
             progress_callback,
         )
     }
@@ -774,9 +844,99 @@ impl Context {
             addr,
             data_type,
             sunxi_efex_cmd_t::EFEX_CMD_FES_UP,
+            data_type_is_byte_addressed(data_type),
             progress_callback,
         )
     }
+
+    /// Upload data from device with progress callback and an explicit addressing
+    /// mode override. Use this when the addressing mode must not follow the
+    /// data-type-tag heuristic — e.g. eMMC boot0/boot1 (tags 0x8001/0x8002) are
+    /// served by `sunxi_sprite_phyread` which takes a SECTOR address, so they
+    /// must be read with `byte_addressed = false` even though the tag's low bits
+    /// are non-zero.
+    pub fn fes_up_with_progress_addressed<F>(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+        byte_addressed: bool,
+        progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        self.fes_up_down_with_progress(
+            buf.as_mut_ptr(),
+            buf.len(),
+            addr,
+            data_type,
+            sunxi_efex_cmd_t::EFEX_CMD_FES_UP,
+            byte_addressed,
+            progress_callback,
+        )
+    }
+
+    /// Upload (read) data from raw NAND / SPI NAND / SPI NOR with a progress
+    /// callback. These media are byte-addressed and use the dedicated FES_NAND
+    /// (0x0301) / FES_SPINAND (0x0302) / FES_NOR (0x0303) commands.
+    ///
+    /// Each callback is invoked after every EFEX_CODE_MAX_SIZE (64KB) transfer.
+    pub fn fes_storage_up_with_progress<F>(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+        cmd: sunxi_efex_cmd_t,
+        progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        self.fes_up_down_with_progress(
+            buf.as_mut_ptr(),
+            buf.len(),
+            addr,
+            data_type,
+            cmd,
+            true,
+            progress_callback,
+        )
+    }
+
+    /// Upload (read) data from byte-addressed media, selecting the dedicated FES
+    /// command from the storage type: 0 = raw NAND (FES_NAND), 3 = SPI NOR
+    /// (FES_NOR), 5 = SPI NAND (FES_SPINAND). Other storage types return an
+    /// error — sector-addressed media (eMMC/SD/UFS) should use
+    /// [`fes_up_with_progress`] instead.
+    pub fn fes_storage_up_for_storage<F>(
+        &self,
+        buf: &mut [u8],
+        addr: u32,
+        data_type: FesDataType,
+        storage_type: i32,
+        progress_callback: F,
+    ) -> Result<u64, EfexError>
+    where
+        F: FnMut(u64, u64),
+    {
+        let cmd = match storage_type {
+            0 => sunxi_efex_cmd_t::EFEX_CMD_FES_NAND,
+            3 => sunxi_efex_cmd_t::EFEX_CMD_FES_NOR,
+            5 => sunxi_efex_cmd_t::EFEX_CMD_FES_SPINAND,
+            _ => return Err(EfexError::NotSupported),
+        };
+        self.fes_storage_up_with_progress(buf, addr, data_type, cmd, progress_callback)
+    }
+}
+
+/// Derive whether a data-type tag uses byte addressing (true) or sector
+/// addressing (false), per the SUNXI_EFEX_DATA_TYPE_MASK rule: tags whose low
+/// 15 bits are non-zero (the 0x7xxx data tags) are byte-addressed, while the
+/// FLASH tag (0x8000) is sector-addressed.
+fn data_type_is_byte_addressed(data_type: FesDataType) -> bool {
+    let base_type = rust_fes_data_type_to_c(data_type) as u32;
+    (base_type & sunxi_fes_data_type_t::SUNXI_EFEX_DATA_TYPE_MASK as u32) != 0
 }
 
 /// Implement Drop trait to automatically release resources
@@ -850,6 +1010,26 @@ pub enum FesDataType {
     Ext4Ubifs,
     /// FLASH operation tag
     Flash,
+    /// eMMC physical boot0 tag (0x8001)
+    FlashBoot0,
+    /// eMMC physical boot1 tag (0x8002)
+    FlashBoot1,
+    /// raw/SPI NAND boot0 tag (0x8010)
+    NandBoot0,
+    /// raw/SPI NAND boot1 tag (0x8020)
+    NandBoot1,
+    /// SPI NOR boot0 tag (0x8011)
+    NorBoot0,
+    /// SPI NOR boot1 tag (0x8021)
+    NorBoot1,
+    /// raw/SPI NAND boot0 size query (0x10001)
+    NandBoot0Size,
+    /// raw/SPI NAND boot1 size query (0x10002)
+    NandBoot1Size,
+    /// SPI NOR boot0 size query (0x10005)
+    NorBoot0Size,
+    /// SPI NOR boot1 size query (0x10006)
+    NorBoot1Size,
 }
 
 /// Convert Rust FES data type to C FES data type
@@ -864,6 +1044,16 @@ fn rust_fes_data_type_to_c(data_type: FesDataType) -> sunxi_fes_data_type_t {
         FesDataType::FullImgSize => sunxi_fes_data_type_t::SUNXI_EFEX_FULLIMG_SIZE_TAG,
         FesDataType::Ext4Ubifs => sunxi_fes_data_type_t::SUNXI_EFEX_EXT4_UBIFS_TAG,
         FesDataType::Flash => sunxi_fes_data_type_t::SUNXI_EFEX_FLASH_TAG,
+        FesDataType::FlashBoot0 => sunxi_fes_data_type_t::SUNXI_EFEX_FLASH_BOOT0_TAG,
+        FesDataType::FlashBoot1 => sunxi_fes_data_type_t::SUNXI_EFEX_FLASH_BOOT1_TAG,
+        FesDataType::NandBoot0 => sunxi_fes_data_type_t::SUNXI_EFEX_NAND_BOOT0,
+        FesDataType::NandBoot1 => sunxi_fes_data_type_t::SUNXI_EFEX_NAND_BOOT1,
+        FesDataType::NorBoot0 => sunxi_fes_data_type_t::SUNXI_EFEX_NOR_BOOT0,
+        FesDataType::NorBoot1 => sunxi_fes_data_type_t::SUNXI_EFEX_NOR_BOOT1,
+        FesDataType::NandBoot0Size => sunxi_fes_data_type_t::SUNXI_EFEX_NAND_BOOT0_SIZE,
+        FesDataType::NandBoot1Size => sunxi_fes_data_type_t::SUNXI_EFEX_NAND_BOOT1_SIZE,
+        FesDataType::NorBoot0Size => sunxi_fes_data_type_t::SUNXI_EFEX_NOR_BOOT0_SIZE,
+        FesDataType::NorBoot1Size => sunxi_fes_data_type_t::SUNXI_EFEX_NOR_BOOT1_SIZE,
     }
 }
 
