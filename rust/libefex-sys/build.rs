@@ -260,6 +260,7 @@ fn build_libefex(
         println!("cargo:rustc-link-lib=advapi32");
         println!("cargo:rustc-link-lib=shell32");
         println!("cargo:rustc-link-lib=setupapi");
+        println!("cargo:rustc-link-lib=winusb");
     }
 
     builder.compile("efex");

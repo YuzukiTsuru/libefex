@@ -15,6 +15,12 @@
 #include <initguid.h>
 #include <usbiodef.h>
 #include <windows.h>
+#include <winusb.h>
+
+struct winusb_handle {
+	HANDLE file;
+	WINUSB_INTERFACE_HANDLE winusb;
+};
 
 static int match_vid_pid(const char *device_path) {
 	if (!device_path)
@@ -103,7 +109,8 @@ static int winusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) 
 		return EFEX_ERR_NULL_PTR;
 	}
 
-	HANDLE const usb_handle = (HANDLE) handle;
+	struct winusb_handle *device = handle;
+	HANDLE const usb_handle = device->file;
 	const size_t max_chunk = 128 * 1024;
 	DWORD bytes_sent = 0;
 
@@ -114,8 +121,9 @@ static int winusb_bulk_send(void *handle, int ep, const char *buf, ssize_t len) 
 
 		const DWORD dwIoControlCode = CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0807, METHOD_OUT_DIRECT, FILE_ANY_ACCESS);
 
-		BOOL const result =
-				DeviceIoControl(usb_handle, dwIoControlCode, NULL, (DWORD) 0, (LPVOID) buf, chunk, &bytes_sent, NULL);
+		BOOL const result = device->winusb
+			? WinUsb_WritePipe(device->winusb, (UCHAR) ep, (PUCHAR) buf, (ULONG) chunk, &bytes_sent, NULL)
+			: DeviceIoControl(usb_handle, dwIoControlCode, NULL, 0, (LPVOID) buf, (DWORD) chunk, &bytes_sent, NULL);
 
 		if (!result || bytes_sent == 0) {
 			return EFEX_ERR_USB_TRANSFER;
@@ -132,13 +140,15 @@ static int winusb_bulk_recv(void *handle, int ep, char *buf, const ssize_t len) 
 		return EFEX_ERR_NULL_PTR;
 	}
 
-	HANDLE const usb_handle = (HANDLE) handle;
+	struct winusb_handle *device = handle;
+	HANDLE const usb_handle = device->file;
 	DWORD bytes_received = 0;
 
 	const DWORD dwIoControlCode = CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0808, METHOD_IN_DIRECT, FILE_ANY_ACCESS);
 
-	const BOOL result =
-			DeviceIoControl(usb_handle, dwIoControlCode, NULL, 0, (LPVOID) buf, (DWORD) len, &bytes_received, NULL);
+	const BOOL result = device->winusb
+		? WinUsb_ReadPipe(device->winusb, (UCHAR) ep, (PUCHAR) buf, (ULONG) len, &bytes_received, NULL)
+		: DeviceIoControl(usb_handle, dwIoControlCode, NULL, 0, (LPVOID) buf, (DWORD) len, &bytes_received, NULL);
 
 	if (!result || bytes_received == 0) {
 		return EFEX_ERR_USB_TRANSFER;
@@ -521,14 +531,45 @@ static int winusb_init(struct sunxi_efex_ctx_t *ctx) {
 		return EFEX_ERR_NULL_PTR;
 	}
 
-	ctx->hdl = CreateFile(ctx->dev_name, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-	                      OPEN_EXISTING, 0, NULL);
-
-	if (ctx->hdl == INVALID_HANDLE_VALUE) {
+	struct winusb_handle *device = calloc(1, sizeof(*device));
+	if (!device) return EFEX_ERR_MEMORY;
+	device->file = CreateFileA(ctx->dev_name, GENERIC_WRITE | GENERIC_READ,
+		FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	if (device->file == INVALID_HANDLE_VALUE) {
+		free(device);
 		return EFEX_ERR_USB_OPEN;
 	}
-
+	if (WinUsb_Initialize(device->file, &device->winusb)) {
+		USB_INTERFACE_DESCRIPTOR descriptor;
+		if (!WinUsb_QueryInterfaceSettings(device->winusb, 0, &descriptor)) goto fail;
+		ctx->epin = ctx->epout = 0;
+		for (UCHAR i = 0; i < descriptor.bNumEndpoints; i++) {
+			WINUSB_PIPE_INFORMATION pipe;
+			if (!WinUsb_QueryPipe(device->winusb, 0, i, &pipe)) goto fail;
+			if (pipe.PipeType != UsbdPipeTypeBulk) continue;
+			ULONG timeout = DEFAULT_USB_TIMEOUT;
+			if (!WinUsb_SetPipePolicy(device->winusb, pipe.PipeId, PIPE_TRANSFER_TIMEOUT,
+				sizeof(timeout), &timeout)) goto fail;
+			if (pipe.PipeId & 0x80) ctx->epin = pipe.PipeId;
+			else ctx->epout = pipe.PipeId;
+		}
+		if (!ctx->epin || !ctx->epout) goto fail;
+	} else {
+		/* Preserve the original Allwinner private-IOCTL driver transport.
+		 * That transport uses synchronous handles, unlike standard WinUSB. */
+		CloseHandle(device->file);
+		device->winusb = NULL;
+		device->file = CreateFileA(ctx->dev_name, GENERIC_WRITE | GENERIC_READ,
+			FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+		if (device->file == INVALID_HANDLE_VALUE) goto fail;
+	}
+	ctx->hdl = device;
 	return EFEX_ERR_SUCCESS;
+fail:
+	if (device->winusb) WinUsb_Free(device->winusb);
+	if (device->file != INVALID_HANDLE_VALUE) CloseHandle(device->file);
+	free(device);
+	return EFEX_ERR_USB_INIT;
 }
 
 static int winusb_exit(struct sunxi_efex_ctx_t *ctx) {
@@ -537,7 +578,10 @@ static int winusb_exit(struct sunxi_efex_ctx_t *ctx) {
 	}
 
 	if (ctx->hdl != NULL && (HANDLE) ctx->hdl != INVALID_HANDLE_VALUE) {
-		CloseHandle((HANDLE) ctx->hdl);
+		struct winusb_handle *device = ctx->hdl;
+		if (device->winusb) WinUsb_Free(device->winusb);
+		CloseHandle(device->file);
+		free(device);
 		ctx->hdl = NULL;
 	}
 	if (ctx->dev_name != NULL) {

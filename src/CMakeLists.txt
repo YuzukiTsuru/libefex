@@ -19,7 +19,7 @@ if(WIN32)
     target_sources(efex PRIVATE
         usb/usb_layer_winusb.c
     )
-    target_link_libraries(efex PRIVATE SetupAPI.lib)
+    target_link_libraries(efex PRIVATE SetupAPI.lib Winusb.lib)
     message(STATUS "Building with winusb and libusb support")
 else()
     message(STATUS "Building with libusb support")
